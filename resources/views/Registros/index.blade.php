@@ -176,7 +176,8 @@
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">
                             <input type="checkbox" id="selectAll" class="checkbox-romance rounded border-gray-300 focus:ring-2 focus:ring-white">
                         </th>
-                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Hora</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Hora Ingreso</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Hora Salida</th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Fecha</th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Nombre</th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Documento</th>
@@ -190,11 +191,19 @@
                 <tbody class="divide-y divide-gray-200" id="tableBody">
                     @forelse($registros as $r)
                         <tr class="table-row border-l-4 border-transparent hover:border-blue-400" data-search="{{ strtolower($r->nombre_apellido . ' ' . $r->doc_identidad . ' ' . $r->habitacion . ' ' . $r->metodo_pago) }}">
+                            <!-- COLUMNA DE CHECKBOX AGREGADA -->
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <input type="checkbox" class="row-checkbox checkbox-romance rounded border-gray-300 focus:ring-2" value="{{ $r->id_estadia }}">
+                                <input type="checkbox" class="row-checkbox checkbox-romance rounded border-gray-300" value="{{ $r->id_estadia }}">
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {{ $r->hora_ingreso }}
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ \Carbon\Carbon::createFromFormat('H:i:s', $r->hora_ingreso)->format('h:i A') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                @if($r->hora_salida)
+                                    {{ \Carbon\Carbon::createFromFormat('H:i:s', $r->hora_salida)->format('h:i A') }}
+                                @else
+                                    <span class="text-gray-400 italic">Sin registrar</span>
+                                @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                 {{ \Illuminate\Support\Carbon::parse($r->fecha_ingreso)->format('d/m/Y') }}
@@ -220,19 +229,28 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                @if(($r->consumo_count ?? 0) > 0)
-                                    <a href="{{ route('registros.consumo', $r->id_estadia) }}"
+                                <div class="flex items-center space-x-2">
+                                    <!-- Botón de editar -->
+                                    <a href="{{ route('registros.edit', $r->id_estadia) }}"
                                        class="inline-flex items-center bg-blue-100 text-blue-700 px-3 py-1 text-xs rounded-full hover:bg-blue-200 transition-colors">
-                                        <i class='bx bx-receipt mr-1'></i>
-                                        Ver consumo ({{ $r->consumo_count }})
+                                        <i class='bx bx-edit mr-1'></i>
+                                        Editar
                                     </a>
-                                @endif
-                                {{-- Si no hay consumo, la celda queda vacía --}}
+                                    
+                                    <!-- Ver consumo (si existe) -->
+                                    @if(($r->consumo_count ?? 0) > 0)
+                                        <a href="{{ route('registros.consumo', $r->id_estadia) }}"
+                                           class="inline-flex items-center bg-green-100 text-green-700 px-3 py-1 text-xs rounded-full hover:bg-green-200 transition-colors">
+                                            <i class='bx bx-receipt mr-1'></i>
+                                            Consumo ({{ $r->consumo_count }})
+                                        </a>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="px-6 py-12 text-center text-gray-500">
+                            <td colspan="11" class="px-6 py-12 text-center text-gray-500">
                                 <div class="flex flex-col items-center">
                                     <i class='bx bx-inbox text-6xl text-gray-300 mb-4'></i>
                                     <span class="text-lg">No hay registros disponibles.</span>
@@ -283,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Selección múltiple
+    // Función para actualizar la barra de acciones
     function updateActionBar() {
         const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
         if (checkedBoxes.length > 0) {
@@ -312,6 +330,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const allCheckboxes = document.querySelectorAll('.row-checkbox');
             const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
             selectAllCheckbox.checked = allCheckboxes.length === checkedBoxes.length;
+            
+            // Si no todos están seleccionados, quitar la marca de "seleccionar todo"
+            if (checkedBoxes.length < allCheckboxes.length) {
+                selectAllCheckbox.indeterminate = checkedBoxes.length > 0;
+            } else {
+                selectAllCheckbox.indeterminate = false;
+            }
         }
     });
     
@@ -320,6 +345,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
         if (checkedBoxes.length === 1) {
             window.location.href = `/registros/${checkedBoxes[0].value}/edit`;
+        } else if (checkedBoxes.length === 0) {
+            alert('Selecciona al menos un registro para editar.');
         } else {
             alert('Selecciona solo un registro para editar.');
         }
@@ -329,10 +356,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('deleteSelected').addEventListener('click', function() {
         const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
         if (checkedBoxes.length > 0) {
-            if (confirm(`¿Eliminar ${checkedBoxes.length} registro(s) seleccionado(s)?`)) {
-                // Aquí podrías implementar eliminación múltiple
+            if (confirm(`¿Estás seguro de eliminar ${checkedBoxes.length} registro(s) seleccionado(s)?`)) {
+                // Aquí implementarías la eliminación múltiple
+                console.log('IDs a eliminar:', Array.from(checkedBoxes).map(cb => cb.value));
                 alert('Funcionalidad de eliminación múltiple por implementar.');
             }
+        } else {
+            alert('Selecciona al menos un registro para eliminar.');
         }
     });
 });

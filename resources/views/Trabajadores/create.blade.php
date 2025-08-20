@@ -48,28 +48,37 @@
 
         <div>
             <label class="block text-sm font-medium mb-1">DNI/CE</label>
-            <input name="DNI" type="text" class="w-full rounded-lg border px-3 py-2" required maxlength="20">
+            <input name="DNI" type="text" value="{{ old('DNI') }}" class="w-full rounded-lg border px-3 py-2" required maxlength="20">
         </div>
 
         <div>
             <label class="block text-sm font-medium mb-1">Nombre y Apellido</label>
-            <input name="nombre_apellido" type="text" class="w-full rounded-lg border px-3 py-2" required maxlength="100">
+            <input name="nombre_apellido" type="text" value="{{ old('nombre_apellido') }}" class="w-full rounded-lg border px-3 py-2" required maxlength="100">
         </div>
 
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium mb-1">Sueldo</label>
-                <input name="sueldo" type="number" step="0.01" class="w-full rounded-lg border px-3 py-2" required>
+                <input name="sueldo" type="number" step="0.01" value="{{ old('sueldo') }}" class="w-full rounded-lg border px-3 py-2" required>
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">Fecha inicio</label>
-                <input name="Fecha_inicio" type="date" class="w-full rounded-lg border px-3 py-2" required>
+                <input name="Fecha_inicio" type="date" value="{{ old('Fecha_inicio') }}" class="w-full rounded-lg border px-3 py-2" required>
             </div>
         </div>
 
         <div>
+            <label class="block text-sm font-medium mb-1">
+                <i class='bx bx-cake mr-1'></i>
+                Fecha de Cumpleaños
+            </label>
+            <input name="fecha_cumple" type="date" value="{{ old('fecha_cumple') }}" class="w-full rounded-lg border px-3 py-2">
+            <small class="text-gray-500 text-xs mt-1">Campo opcional</small>
+        </div>
+
+        <div>
             <label class="block text-sm font-medium mb-1">Teléfono</label>
-            <input name="Telef" type="text" class="w-full rounded-lg border px-3 py-2" required maxlength="9">
+            <input name="Telef" type="text" value="{{ old('Telef') }}" class="w-full rounded-lg border px-3 py-2" required maxlength="9">
         </div>
 
         <div class="flex items-center gap-2">

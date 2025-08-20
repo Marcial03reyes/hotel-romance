@@ -89,6 +89,44 @@
         font-weight: 600;
     }
 
+    /* ← NUEVOS ESTILOS PARA COMPROBANTES */
+    .badge-boleta {
+        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        color: #1e40af;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .badge-factura {
+        background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+        color: #166534;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .badge-ninguno {
+        background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+        color: #6b7280;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .codigo-comprobante {
+        background: #f8fafc;
+        color: var(--accent-color);
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.8rem;
+        border: 1px solid var(--light-blue);
+    }
+
     /* Iconos con color azul */
     .icon-azul {
         color: var(--secondary-color);
@@ -279,7 +317,7 @@
                 <tr>
                     <th class="px-6 py-4 text-left">
                         <i class='bx bx-check-square mr-1'></i>
-                        Seleccionar
+                        
                     </th>
                     <th class="px-6 py-4 text-left">
                         <i class='bx bx-tag mr-1'></i>
@@ -296,6 +334,15 @@
                     <th class="px-6 py-4 text-left">
                         <i class='bx bx-calendar mr-1'></i>
                         Fecha
+                    </th>
+                    <!-- ← NUEVAS COLUMNAS -->
+                    <th class="px-6 py-4 text-left">
+                        <i class='bx bx-receipt mr-1'></i>
+                        Tipo Comprobante
+                    </th>
+                    <th class="px-6 py-4 text-left">
+                        <i class='bx bx-barcode mr-1'></i>
+                        Código
                     </th>
                     <th class="px-6 py-4 text-right">
                         <i class='bx bx-file-blank mr-1'></i>
@@ -329,6 +376,39 @@
                                 {{ \Illuminate\Support\Carbon::parse($g->fecha_gasto)->format('d/m/Y') }}
                             </div>
                         </td>
+                        
+                        <!-- ← NUEVA COLUMNA: TIPO DE COMPROBANTE -->
+                        <td class="px-6 py-4">
+                            @if($g->tipo_comprobante == 'BOLETA')
+                                <span class="badge-boleta">
+                                    <i class='bx bx-receipt mr-1'></i>
+                                    BOLETA
+                                </span>
+                            @elseif($g->tipo_comprobante == 'FACTURA')
+                                <span class="badge-factura">
+                                    <i class='bx bx-file-blank mr-1'></i>
+                                    FACTURA
+                                </span>
+                            @else
+                                <span class="badge-ninguno">
+                                    <i class='bx bx-x mr-1'></i>
+                                    NINGUNO
+                                </span>
+                            @endif
+                        </td>
+                        
+                        <!-- ← NUEVA COLUMNA: CÓDIGO DE COMPROBANTE -->
+                        <td class="px-6 py-4">
+                            @if($g->codigo_comprobante)
+                                <span class="codigo-comprobante">
+                                    <i class='bx bx-barcode mr-1'></i>
+                                    {{ $g->codigo_comprobante }}
+                                </span>
+                            @else
+                                <span class="text-gray-400">—</span>
+                            @endif
+                        </td>
+                        
                         <td class="px-6 py-4 text-right space-x-2">
                             @if($g->comprobante)
                                 <a href="{{ route('gastos.comprobante', $g->id_gasto) }}" 
@@ -346,7 +426,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-12 text-center">
+                        <td colspan="8" class="px-6 py-12 text-center">
                             <div class="flex flex-col items-center">
                                 <i class='bx bx-receipt text-4xl text-gray-300 mb-2'></i>
                                 <span class="text-gray-500 font-medium">No hay gastos registrados</span>
@@ -370,6 +450,7 @@
                     <li>Selecciona el checkbox de una fila para habilitar las acciones de editar y eliminar</li>
                     <li>Los gastos se ordenan por fecha de registro de más reciente a más antiguo</li>
                     <li>Los comprobantes en verde indican que tienen archivo adjunto</li>
+                    <li><strong>Nuevo:</strong> Ahora puedes especificar el tipo de comprobante (BOLETA, FACTURA o NINGUNO) y su código</li>
                     <li>Todos los montos se muestran en soles peruanos (S/)</li>
                 </ul>
             </div>
@@ -474,7 +555,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Auto-focus en el botón de agregar gasto cuando no hay gastos
-    const noDataMessage = document.querySelector('td[colspan="6"]');
+    const noDataMessage = document.querySelector('td[colspan="8"]');
     if (noDataMessage) {
         const addButton = document.querySelector('.btn-romance');
         if (addButton) {

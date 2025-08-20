@@ -25,11 +25,12 @@ class GraficaController extends Controller
     }
     
     /**
-     * Obtener gastos específicos del HOTEL (gastos generales + compras internas)
+     * Obtener gastos específicos del HOTEL (solo gastos generales - SIN productos individuales)
+     * CORREGIDO: Solo muestra categorías de gastos, no productos del inventario
      */
     private function getGastosMensualesHotel()
     {
-        // 1. Gastos generales del hotel
+        // SOLO gastos generales del hotel (incluyendo COMPRAS HOTEL como categoría)
         $gastosGenerales = DB::table('fact_gastos_generales as fg')
             ->join('dim_tipo_gasto as tg', 'tg.id_tipo_gasto', '=', 'fg.id_tipo_gasto')
             ->selectRaw('
@@ -42,46 +43,36 @@ class GraficaController extends Controller
             ->groupBy('tg.nombre', 'mes', 'anio')
             ->get();
 
-        // 2. Compras de productos internos del hotel (toallas, detergente, etc.)
-        $comprasInternas = DB::table('fact_compra_interna as fci')
-            ->join('dim_productos_hotel as dph', 'dph.id_prod_hotel', '=', 'fci.id_prod_bod')
-            ->selectRaw('
-                dph.nombre as tipo_gasto,
-                MONTH(fci.fecha_compra) as mes,
-                YEAR(fci.fecha_compra) as anio,
-                SUM(fci.cantidad * fci.precio_unitario) as total_mes
-            ')
-            ->whereRaw('fci.fecha_compra >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
-            ->groupBy('dph.nombre', 'mes', 'anio')
-            ->get();
-
-        // 3. Combinar ambos tipos de gastos del hotel
-        $todosLosGastosHotel = $gastosGenerales->concat($comprasInternas);
+        // ELIMINADO: Ya no incluimos productos individuales del inventario
+        // porque COMPRAS HOTEL ya está en los gastos generales como categoría
         
-        return $this->procesarGastosPorTipo($todosLosGastosHotel);
+        return $this->procesarGastosPorTipo($gastosGenerales);
     }
     
     /**
-     * Obtener gastos específicos de la BODEGA (compras de productos para venta)
+     * Obtener gastos específicos de la BODEGA (solo para análisis separado si es necesario)
+     * CORREGIDO: Ya no necesario porque COMPRAS BODEGA está en gastos generales
      */
     private function getGastosMensualesBodega()
     {
-        // Solo compras de productos que se venden a huéspedes (bodega/inventario)
-        $compras = DB::table('fact_compra_bodega as fcb')
-            ->join('dim_productos_bodega as dpb', 'dpb.id_prod_bod', '=', 'fcb.id_prod_bod')
+        // OPCIÓN 1: Si quieres mantener análisis separado de bodega, solo mostrar categoría
+        $comprasBodega = DB::table('fact_gastos_generales as fg')
+            ->join('dim_tipo_gasto as tg', 'tg.id_tipo_gasto', '=', 'fg.id_tipo_gasto')
             ->selectRaw('
-                dpb.nombre as producto,
-                MONTH(fcb.fecha_compra) as mes,
-                YEAR(fcb.fecha_compra) as anio,
-                SUM(fcb.cantidad * fcb.precio_unitario) as total_mes
+                "COMPRAS BODEGA" as producto,
+                MONTH(fg.fecha_gasto) as mes,
+                YEAR(fg.fecha_gasto) as anio,
+                SUM(fg.monto) as total_mes
             ')
-            ->whereRaw('fcb.fecha_compra >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
-            ->groupBy('dpb.nombre', 'mes', 'anio')
-            ->orderBy('anio')
-            ->orderBy('mes')
+            ->where('tg.nombre', 'COMPRAS BODEGA')
+            ->whereRaw('fg.fecha_gasto >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
+            ->groupBy('mes', 'anio')
             ->get();
             
-        return $this->procesarGastosPorTipo($compras, 'producto');
+        return $this->procesarGastosPorTipo($comprasBodega, 'producto');
+        
+        // OPCIÓN 2: Si no necesitas análisis separado, retorna array vacío
+        // return ['gastosPorTipo' => [], 'meses' => [], 'totalesPorMes' => []];
     }
     
     /**
@@ -134,7 +125,7 @@ class GraficaController extends Controller
         // Datos para HOTEL
         $datosHotel = $this->getDatosHotel();
         
-        // Datos para BODEGA
+        // Datos para BODEGA (opcional, o puede ser parte del hotel)
         $datosBodega = $this->getDatosBodega();
         
         return [
@@ -145,6 +136,7 @@ class GraficaController extends Controller
     
     /**
      * Obtener datos de ingresos y gastos del HOTEL para gráficos
+     * CORREGIDO: Solo gastos generales (que incluyen COMPRAS HOTEL como categoría)
      */
     private function getDatosHotel()
     {
@@ -162,7 +154,7 @@ class GraficaController extends Controller
             ->orderBy('mes')
             ->get();
 
-        // Gastos del hotel: generales + compras internas
+        // GASTOS DEL HOTEL: Solo gastos generales (incluye COMPRAS HOTEL)
         $gastosGenerales = DB::table('fact_gastos_generales')
             ->selectRaw('
                 MONTH(fecha_gasto) as mes,
@@ -173,24 +165,15 @@ class GraficaController extends Controller
             ->groupBy('mes', 'anio')
             ->get();
 
-        $gastosComprasInternas = DB::table('fact_compra_interna')
-            ->selectRaw('
-                MONTH(fecha_compra) as mes,
-                YEAR(fecha_compra) as anio,
-                SUM(cantidad * precio_unitario) as total_gastos
-            ')
-            ->whereRaw('fecha_compra >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
-            ->groupBy('mes', 'anio')
-            ->get();
-
-        // Combinar ambos tipos de gastos del hotel
-        $gastosTotalesHotel = $this->combinarGastos($gastosGenerales, $gastosComprasInternas);
+        // ELIMINADO: Ya no sumamos compras internas porque COMPRAS HOTEL
+        // ya está registrado como gasto general
         
-        return $this->combinarDatos($ingresosHabitacion, $gastosTotalesHotel);
+        return $this->combinarDatos($ingresosHabitacion, $gastosGenerales);
     }
     
     /**
      * Obtener datos de ingresos y gastos de la BODEGA para gráficos
+     * CORREGIDO: Solo si quieres mantener análisis separado de bodega
      */
     private function getDatosBodega()
     {
@@ -208,14 +191,16 @@ class GraficaController extends Controller
             ->orderBy('mes')
             ->get();
             
-        // Gastos de bodega (compras de productos para venta)
-        $gastos = DB::table('fact_compra_bodega')
+        // GASTOS DE BODEGA: Solo la categoría COMPRAS BODEGA de gastos generales
+        $gastos = DB::table('fact_gastos_generales as fg')
+            ->join('dim_tipo_gasto as tg', 'tg.id_tipo_gasto', '=', 'fg.id_tipo_gasto')
             ->selectRaw('
-                MONTH(fecha_compra) as mes,
-                YEAR(fecha_compra) as anio,
-                SUM(cantidad * precio_unitario) as total_gastos
+                MONTH(fg.fecha_gasto) as mes,
+                YEAR(fg.fecha_gasto) as anio,
+                SUM(fg.monto) as total_gastos
             ')
-            ->whereRaw('fecha_compra >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
+            ->where('tg.nombre', 'COMPRAS BODEGA')
+            ->whereRaw('fg.fecha_gasto >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
             ->groupBy('mes', 'anio')
             ->orderBy('anio')
             ->orderBy('mes')
@@ -264,38 +249,8 @@ class GraficaController extends Controller
     }
 
     /**
-     * Combinar dos arrays de gastos sumando los totales por mes
+     * ELIMINADO: Ya no necesitamos combinarGastos porque solo usamos gastos generales
      */
-    private function combinarGastos($gastos1, $gastos2)
-    {
-        $gastosCombinados = [];
-        
-        // Procesar primeros gastos
-        foreach ($gastos1 as $gasto) {
-            $key = $gasto->mes . '-' . $gasto->anio;
-            $gastosCombinados[$key] = (object)[
-                'mes' => $gasto->mes,
-                'anio' => $gasto->anio,
-                'total_gastos' => $gasto->total_gastos
-            ];
-        }
-        
-        // Sumar segundos gastos
-        foreach ($gastos2 as $gasto) {
-            $key = $gasto->mes . '-' . $gasto->anio;
-            if (isset($gastosCombinados[$key])) {
-                $gastosCombinados[$key]->total_gastos += $gasto->total_gastos;
-            } else {
-                $gastosCombinados[$key] = (object)[
-                    'mes' => $gasto->mes,
-                    'anio' => $gasto->anio,
-                    'total_gastos' => $gasto->total_gastos
-                ];
-            }
-        }
-        
-        return collect(array_values($gastosCombinados));
-    }
     
     /**
      * Obtener nombre completo del mes

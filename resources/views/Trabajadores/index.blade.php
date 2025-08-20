@@ -68,6 +68,11 @@
         background-color: #fef3c7;
         color: #92400e;
     }
+    
+    .badge-cumple {
+        background-color: #f3e8ff;
+        color: #7c3aed;
+    }
 </style>
 
 <div class="container mx-auto py-6 px-4">
@@ -131,6 +136,7 @@
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Nombre y Apellido</th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Sueldo</th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Fecha inicio</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Cumpleaños</th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Teléfono</th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Acciones</th>
                     </tr>
@@ -150,6 +156,30 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900">{{ \Illuminate\Support\Carbon::parse($t->Fecha_inicio)->format('d/m/Y') }}</div>
                                 <div class="text-xs text-gray-500">{{ \Illuminate\Support\Carbon::parse($t->Fecha_inicio)->diffForHumans() }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if($t->fecha_cumple)
+                                    <div class="text-sm text-gray-900">
+                                        <span class="badge badge-cumple">
+                                            <i class='bx bx-cake mr-1'></i>
+                                            {{ \Illuminate\Support\Carbon::parse($t->fecha_cumple)->format('d/m/Y') }}
+                                        </span>
+                                    </div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        @php
+                                            $cumple = \Illuminate\Support\Carbon::parse($t->fecha_cumple)->setYear(now()->year);
+                                            if ($cumple->isPast()) {
+                                                $cumple->addYear();
+                                            }
+                                        @endphp
+                                        Próximo: {{ $cumple->diffForHumans() }}
+                                    </div>
+                                @else
+                                    <span class="text-xs text-gray-400">
+                                        <i class='bx bx-calendar-x mr-1'></i>
+                                        Sin fecha
+                                    </span>
+                                @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="badge badge-telefono">{{ $t->Telef ?: 'Sin teléfono' }}</span>
@@ -177,7 +207,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                            <td colspan="7" class="px-6 py-12 text-center text-gray-500">
                                 <div class="flex flex-col items-center">
                                     <i class='bx bx-briefcase text-6xl text-gray-300 mb-4'></i>
                                     <span class="text-lg">No hay trabajadores registrados aún.</span>

@@ -68,6 +68,15 @@
         </div>
 
         <div>
+            <label class="block text-sm font-medium mb-1">
+                <i class='bx bx-cake mr-1'></i>
+                Fecha de Cumpleaños
+            </label>
+            <input name="fecha_cumple" type="date" value="{{ old('fecha_cumple', $trabajador->fecha_cumple ? \Illuminate\Support\Carbon::parse($trabajador->fecha_cumple)->toDateString() : '') }}" class="w-full rounded-lg border px-3 py-2">
+            <small class="text-gray-500 text-xs mt-1">Campo opcional</small>
+        </div>
+
+        <div>
             <label class="block text-sm font-medium mb-1">Teléfono</label>
             <input name="Telef" type="text" value="{{ old('Telef', $trabajador->Telef) }}" class="w-full rounded-lg border px-3 py-2" required maxlength="9">
         </div>

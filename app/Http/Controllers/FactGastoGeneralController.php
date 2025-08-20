@@ -13,11 +13,20 @@ class FactGastoGeneralController extends Controller
 {
     public function index()
     {
-        // ✅ AGREGAMOS EL CAMPO COMPROBANTE A LA CONSULTA
+        // ← AGREGAMOS LOS NUEVOS CAMPOS A LA CONSULTA
         $gastos = DB::table('fact_gastos_generales as g')
             ->join('dim_tipo_gasto as tg', 'tg.id_tipo_gasto', '=', 'g.id_tipo_gasto')
             ->join('dim_met_pago as mp', 'mp.id_met_pago', '=', 'g.id_met_pago')
-            ->select('g.id_gasto', 'tg.nombre as tipo', 'g.monto', 'mp.met_pago', 'g.fecha_gasto', 'g.comprobante') // ← AQUÍ
+            ->select(
+                'g.id_gasto', 
+                'tg.nombre as tipo', 
+                'g.monto', 
+                'mp.met_pago', 
+                'g.fecha_gasto', 
+                'g.tipo_comprobante',    // ← NUEVO
+                'g.codigo_comprobante',  // ← NUEVO
+                'g.comprobante'
+            )
             ->orderByDesc('g.fecha_gasto')
             ->orderByDesc('g.id_gasto')
             ->get();
@@ -35,23 +44,40 @@ class FactGastoGeneralController extends Controller
 
     public function store(Request $request)
     {
-        // ✅ AGREGAMOS VALIDACIÓN PARA EL COMPROBANTE
-        $validated = $request->validate([
+        // ← AGREGAMOS VALIDACIÓN CONDICIONAL PARA LOS NUEVOS CAMPOS
+        $rules = [
             'id_tipo_gasto' => 'required|exists:dim_tipo_gasto,id_tipo_gasto',
             'monto'         => 'required|numeric|min:0|max:999999.99',
             'id_met_pago'   => 'required|exists:dim_met_pago,id_met_pago',
             'fecha_gasto'   => 'required|date',
-            'comprobante'   => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:5120' // 5MB máximo
+            'tipo_comprobante' => 'required|in:BOLETA,FACTURA,NINGUNO',
+            'comprobante'   => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:5120'
+        ];
+
+        // ← VALIDACIÓN CONDICIONAL: Si tipo_comprobante es BOLETA o FACTURA, codigo_comprobante es obligatorio
+        if (in_array($request->tipo_comprobante, ['BOLETA', 'FACTURA'])) {
+            $rules['codigo_comprobante'] = 'required|string|max:50';
+        } else {
+            $rules['codigo_comprobante'] = 'nullable|string|max:50';
+        }
+
+        $validated = $request->validate($rules, [
+            'tipo_comprobante.required' => 'El tipo de comprobante es obligatorio',
+            'tipo_comprobante.in' => 'El tipo de comprobante debe ser BOLETA, FACTURA o NINGUNO',
+            'codigo_comprobante.required' => 'El código de comprobante es obligatorio cuando seleccionas BOLETA o FACTURA',
+            'codigo_comprobante.max' => 'El código de comprobante no puede tener más de 50 caracteres'
         ]);
 
-        // Plan B: asignación directa
+        // Crear nuevo gasto
         $g = new FactGastoGeneral();
         $g->id_tipo_gasto = $validated['id_tipo_gasto'];
         $g->monto         = $validated['monto'];
         $g->id_met_pago   = $validated['id_met_pago'];
         $g->fecha_gasto   = $validated['fecha_gasto'];
+        $g->tipo_comprobante = $validated['tipo_comprobante'];                    // ← NUEVO
+        $g->codigo_comprobante = $validated['codigo_comprobante'] ?? null;       // ← NUEVO
 
-        // ✅ MANEJAR LA SUBIDA DEL COMPROBANTE
+        // Manejar subida del comprobante (archivo)
         if ($request->hasFile('comprobante')) {
             $file = $request->file('comprobante');
             $filename = 'comprobante_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
@@ -77,22 +103,38 @@ class FactGastoGeneralController extends Controller
     {
         $gasto = FactGastoGeneral::findOrFail($id);
 
-        // ✅ AGREGAMOS VALIDACIÓN PARA EL COMPROBANTE EN UPDATE
-        $validated = $request->validate([
+        // ← MISMA VALIDACIÓN CONDICIONAL PARA UPDATE
+        $rules = [
             'id_tipo_gasto' => 'required|exists:dim_tipo_gasto,id_tipo_gasto',
             'monto'         => 'required|numeric|min:0|max:999999.99',
             'id_met_pago'   => 'required|exists:dim_met_pago,id_met_pago',
             'fecha_gasto'   => 'required|date',
+            'tipo_comprobante' => 'required|in:BOLETA,FACTURA,NINGUNO',
             'comprobante'   => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:5120'
+        ];
+
+        if (in_array($request->tipo_comprobante, ['BOLETA', 'FACTURA'])) {
+            $rules['codigo_comprobante'] = 'required|string|max:50';
+        } else {
+            $rules['codigo_comprobante'] = 'nullable|string|max:50';
+        }
+
+        $validated = $request->validate($rules, [
+            'tipo_comprobante.required' => 'El tipo de comprobante es obligatorio',
+            'tipo_comprobante.in' => 'El tipo de comprobante debe ser BOLETA, FACTURA o NINGUNO',
+            'codigo_comprobante.required' => 'El código de comprobante es obligatorio cuando seleccionas BOLETA o FACTURA',
+            'codigo_comprobante.max' => 'El código de comprobante no puede tener más de 50 caracteres'
         ]);
 
-        // Plan B: asignación directa
+        // Actualizar campos
         $gasto->id_tipo_gasto = $validated['id_tipo_gasto'];
         $gasto->monto         = $validated['monto'];
         $gasto->id_met_pago   = $validated['id_met_pago'];
         $gasto->fecha_gasto   = $validated['fecha_gasto'];
+        $gasto->tipo_comprobante = $validated['tipo_comprobante'];           // ← NUEVO
+        $gasto->codigo_comprobante = $validated['codigo_comprobante'] ?? null; // ← NUEVO
 
-        // ✅ MANEJAR LA SUBIDA DEL NUEVO COMPROBANTE
+        // Manejar subida del nuevo comprobante
         if ($request->hasFile('comprobante')) {
             // Eliminar el comprobante anterior si existe
             if ($gasto->comprobante && Storage::disk('public')->exists($gasto->comprobante)) {
@@ -114,7 +156,7 @@ class FactGastoGeneralController extends Controller
     {
         $gasto = FactGastoGeneral::findOrFail($id);
         
-        // ✅ ELIMINAR EL COMPROBANTE SI EXISTE
+        // Eliminar el comprobante si existe
         if ($gasto->comprobante && Storage::disk('public')->exists($gasto->comprobante)) {
             Storage::disk('public')->delete($gasto->comprobante);
         }

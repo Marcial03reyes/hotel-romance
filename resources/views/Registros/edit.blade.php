@@ -217,7 +217,7 @@
                     Detalles de la Estadía
                 </h2>
                 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             <i class='bx bx-time mr-1'></i>
@@ -229,6 +229,20 @@
                                required>
                     </div>
                     
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class='bx bx-time-five mr-1'></i>
+                            Hora de Salida (Opcional)
+                        </label>
+                        <input name="hora_salida" type="time" 
+                            value="{{ old('hora_salida', $estadia->hora_salida) }}"
+                            class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all">
+                        <p class="text-xs text-gray-500 mt-1">
+                            <i class='bx bx-info-circle mr-1'></i>
+                            Campo opcional
+                        </p>
+                    </div>
+
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             <i class='bx bx-calendar mr-1'></i>

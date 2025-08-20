@@ -15,6 +15,8 @@ class FactGastoGeneral extends Model
         'id_met_pago',
         'monto',
         'fecha_gasto',
+        'tipo_comprobante',    // ← NUEVO CAMPO
+        'codigo_comprobante',  // ← NUEVO CAMPO
         'comprobante'
     ];
 
@@ -40,6 +42,12 @@ class FactGastoGeneral extends Model
     public function getMetPagoAttribute()
     {
         return $this->metodoPago ? $this->metodoPago->met_pago : 'Sin método';
+    }
+
+    // ← NUEVO: Accessor para verificar si tiene código de comprobante
+    public function getTieneCodigoComprobanteAttribute()
+    {
+        return !empty($this->codigo_comprobante);
     }
 
     // Accessor para verificar si tiene comprobante

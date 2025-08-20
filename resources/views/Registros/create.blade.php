@@ -111,7 +111,7 @@
                     Detalles de la Estadía
                 </h2>
                 
-                <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="grid grid-cols-3 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             <i class='bx bx-time mr-1'></i>
@@ -122,6 +122,19 @@
                                required>
                     </div>
                     
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class='bx bx-time-five mr-1'></i>
+                            Hora de Salida (Opcional)
+                        </label>
+                        <input name="hora_salida" type="time" value="{{ old('hora_salida') }}"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <small class="text-xs text-gray-500 mt-1">
+                            <i class='bx bx-info-circle mr-1'></i>
+                            Se puede registrar después
+                        </small>
+                    </div>
+
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             <i class='bx bx-calendar mr-1'></i>
@@ -170,9 +183,9 @@
                 </label>
                 <div class="relative">
                     <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">S/</span>
-                    <input name="tarifa_total" id="tarifa_total" type="number" step="0.01" min="0"
-                            class="input-field w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg transition-all" 
-                            required placeholder="0.00">
+                    <input name="monto" id="tarifa_total" type="number" step="0.01" min="0"
+                        class="input-field w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg transition-all" 
+                        required placeholder="0.00">
                 </div>
                 <p class="text-xs text-gray-500 mt-1">Monto total que debe pagar el huésped por la habitación</p>
             </div>
@@ -190,7 +203,7 @@
                                 <i class='bx bx-wallet mr-1'></i>
                                 Método de Pago *
                             </label>
-                            <select name="pagos[0][id_met_pago]" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all metodo-pago" required>
+                            <select name="id_met_pago" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all metodo-pago" required>
                                 <option value="">Selecciona un método</option>
                                 <option value="1">Efectivo</option>
                                 <option value="2">Tarjeta de Crédito</option>
@@ -207,9 +220,9 @@
                             </label>
                             <div class="relative">
                                 <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">S/</span>
-                                <input name="pagos[0][monto]" type="number" step="0.01" min="0"
-                                        class="input-field w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg transition-all monto-pago" 
-                                        required placeholder="0.00">
+                                <input name="monto_individual" type="number" step="0.01" min="0"
+                                    class="input-field w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg transition-all monto-pago" 
+                                    placeholder="0.00" required>
                             </div>
                         </div>
                     </div>
@@ -249,12 +262,12 @@
                         </label>
                         <div class="flex items-center space-x-6 pt-3">
                             <label class="flex items-center">
-                                <input type="radio" name="requiere_boleta" value="SI" id="boleta_si"
+                                <input type="radio" name="boleta" value="SI" id="boleta_si"
                                         class="radio-azul focus:ring-blue-500 mr-2">
                                 <span class="text-sm font-medium text-gray-700">Sí</span>
                             </label>
                             <label class="flex items-center">
-                                <input type="radio" name="requiere_boleta" value="NO" id="boleta_no" checked
+                                <input type="radio" name="boleta" value="NO" id="boleta_no" checked
                                         class="radio-azul focus:ring-blue-500 mr-2">
                                 <span class="text-sm font-medium text-gray-700">No</span>
                             </label>
@@ -769,7 +782,7 @@ document.addEventListener('DOMContentLoaded', function() {
     btnAddPago.addEventListener('click', addPagoRow);
     
     tarifaTotalInput.addEventListener('input', calcularTotales);
-    
+
     // Eventos iniciales para el primer pago
     updatePagoEvents();
     

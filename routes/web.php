@@ -20,13 +20,6 @@ use App\Http\Controllers\FactHorarioController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GraficaController;
 
-// En tu archivo routes/web.php, agregar esta línea:
-Route::get('registros/lookup-cliente', [
-    FactRegistroClienteController::class, 'lookupCliente']
-    )->name('registros.lookup-cliente');
-
-
-
 /*
 |--------------------------------------------------------------------------
 | RUTA PRINCIPAL - Redirección automática
@@ -83,18 +76,30 @@ Route::middleware('auth')->group(function () {
     |----------------------------------------------------------------------
     */
     
-    // REGISTRO DE HABITACIONES (Estadías) - TODOS pueden acceder
+    // ✅ REGISTRO DE HABITACIONES (Estadías) - TODOS pueden acceder
     Route::prefix('registros')->name('registros.')->group(function () {
+        // ✅ LOOKUP cliente (DENTRO del grupo, más organizado)
+        Route::get('lookup-cliente', [FactRegistroClienteController::class, 'lookupCliente'])
+             ->name('lookup-cliente');
+        
+        // ✅ RUTAS BÁSICAS DE REGISTRO
         Route::get('/', [FactRegistroClienteController::class, 'index'])->name('index');
         Route::get('create', [FactRegistroClienteController::class, 'create'])->name('create');
         Route::post('/', [FactRegistroClienteController::class, 'store'])->name('store');
         Route::get('{id}/edit', [FactRegistroClienteController::class, 'edit'])->name('edit');
         Route::put('{id}', [FactRegistroClienteController::class, 'update'])->name('update');
+        
+        // ✅ RUTAS DE CONSUMO (ORDENADAS POR ESPECIFICIDAD)
         Route::get('{id}/consumo', [FactRegistroClienteController::class, 'consumo'])->name('consumo');
+        Route::post('{id}/consumo', [FactRegistroClienteController::class, 'storeConsumo'])->name('consumo.store');
+        Route::put('{id}/consumo/{consumoId}', [FactRegistroClienteController::class, 'updateConsumo'])->name('consumo.update');
+        Route::delete('{id}/consumo/{consumoId}', [FactRegistroClienteController::class, 'destroyConsumo'])->name('consumo.destroy');
+        
+        // ✅ ELIMINAR ESTADÍA (AL FINAL para evitar conflictos)
         Route::delete('{id}', [FactRegistroClienteController::class, 'destroy'])->name('destroy');
     });
     
-    // CLIENTES - TODOS pueden acceder
+    // ✅ CLIENTES - TODOS pueden acceder
     Route::resource('clientes', DimRegistroClienteController::class);
 
     /*
@@ -115,7 +120,7 @@ Route::middleware('auth')->group(function () {
     |----------------------------------------------------------------------
     */
     
-    // Lookup para autocompletar cliente
+    // ✅ MANTENER ESTA RUTA PARA COMPATIBILIDAD CON VISTAS EXISTENTES
     Route::get('api/clientes/lookup', function(Request $request) {
         $doc = $request->query('doc');
         
