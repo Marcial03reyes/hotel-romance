@@ -55,7 +55,7 @@ class DimProductoBodega extends Model
      */
     public function getStockAttribute()
     {
-        $compradas = $this->comprasInternas()->sum('cantidad') ?? 0;
+        $compradas = $this->comprasBodega()->sum('cantidad') ?? 0; // ✅ CORREGIDO
         $vendidas = $this->ventasClientes()->sum('cantidad') ?? 0;
         return $compradas - $vendidas;
     }

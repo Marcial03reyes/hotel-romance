@@ -182,6 +182,14 @@
                                         <i class='bx bx-history mr-1'></i>
                                         Historial
                                     </a>
+
+                                    <!-- BOTÓN EDITAR (NUEVO) -->
+                                    <a href="{{ route('productos-bodega.edit-producto', $producto->id_prod_bod) }}"
+                                        class="inline-flex items-center bg-yellow-100 text-yellow-700 px-3 py-1 text-xs rounded-full hover:bg-yellow-200 transition-colors"
+                                        title="Editar nombre del producto">
+                                        <i class='bx bx-edit mr-1'></i>
+                                        Editar
+                                    </a>
                                     
                                     <a href="{{ route('productos-bodega.create-compra', $producto->id_prod_bod) }}"
                                        class="inline-flex items-center bg-green-100 text-green-700 px-3 py-1 text-xs rounded-full hover:bg-green-200 transition-colors">
