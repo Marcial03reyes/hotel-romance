@@ -205,6 +205,13 @@
                 <p class="text-gray-600">Administra y controla todos los gastos del hotel</p>
             </div>
             <div class="flex items-center space-x-3">
+                <!-- Botón Agregar Tipo de Gasto -->
+                <a href="{{ route('tipos-gasto.create') }}"
+                class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white hover:bg-green-700 transition-colors">
+                    <i class='bx bx-plus mr-2'></i>
+                    Agregar Tipo de Gasto
+                </a>
+                
                 <a href="{{ route('gastos.create') }}"
                    class="btn-romance px-6 py-3 rounded-lg font-medium shadow-lg">
                     <i class='bx bx-plus mr-2'></i>

@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('dim_met_pago', function (Blueprint $table) {
             $table->id('id_met_pago');
-            $table->enum('met_pago', ['Efectivo', 'Yape', 'Plin', 'Tarjeta', 'QR']);
+            $table->enum('met_pago', ['Efectivo', 'Plin', 'Tarjeta crédito', 'Transferencia', 'Yape']);
+            // $table->enum('met_pago', ['Efectivo', 'Yape', 'Plin', 'Tarjeta', 'QR']);
         });
     }
 
