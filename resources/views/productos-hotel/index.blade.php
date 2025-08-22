@@ -115,6 +115,26 @@
                                             <i class='bx bx-plus mr-1'></i>
                                             Comprar
                                         </a>
+                                        <!-- Editar Producto -->
+                                        <a href="{{ route('productos-hotel.edit-producto', $producto->id_prod_hotel) }}" 
+                                            class="inline-flex items-center px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-md hover:bg-yellow-200 transition-colors"
+                                            title="Editar producto">
+                                                <i class='bx bx-edit mr-1'></i>
+                                                Editar
+                                        </a>
+                                        <!-- Eliminar Producto -->
+                                        <form action="{{ route('productos-hotel.destroy-producto', $producto->id_prod_hotel) }}" 
+                                            method="POST" style="display: inline;" 
+                                            onsubmit="return confirm('¿Estás seguro de eliminar este producto? Esta acción no se puede deshacer.')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" 
+                                                    class="inline-flex items-center px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-md hover:bg-red-200 transition-colors"
+                                                    title="Eliminar producto">
+                                                <i class='bx bx-trash mr-1'></i>
+                                                Eliminar
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
