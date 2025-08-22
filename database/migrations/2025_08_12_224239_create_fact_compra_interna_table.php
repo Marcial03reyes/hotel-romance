@@ -17,7 +17,7 @@ return new class extends Migration
             $table->integer('cantidad');
             $table->decimal('precio_unitario', 8, 2);
             $table->date('fecha_compra');
-            //$table->text('proveedor')->nullable();
+            $table->text('proveedor')->nullable();
             $table->timestamps();
 
             // Clave foránea
