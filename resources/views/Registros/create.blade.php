@@ -294,13 +294,10 @@
                                 Método de Pago *
                             </label>
                             <select name="id_met_pago" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all metodo-pago" required>
-                                <option value="">Selecciona un método</option>
-                                <option value="1">Efectivo</option>
-                                <option value="2">Tarjeta de Crédito</option>
-                                <option value="3">Tarjeta de Débito</option>
-                                <option value="4">Yape</option>
-                                <option value="5">Plin</option>
-                                <option value="6">Transferencia</option>
+                                <option value="">Selecciona un método</option>    
+                                @foreach($metodos as $metodo)
+                                    <option value="{{ $metodo->id_met_pago }}">{{ $metodo->met_pago }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div>
@@ -406,7 +403,7 @@
             </div>
         </div>
 
-        <!-- Botones de acciÃ³n -->
+        <!-- Botones de acción -->
         <div class="flex items-center justify-between pt-6 border-t border-gray-200">
             <a href="{{ route('registros.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-medium transition-all">
                 <i class='bx bx-x mr-2'></i>
@@ -618,7 +615,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     campo.style.borderColor = '#C8D7ED';
                     campo.style.color = '#6b7280';
                     campo.style.cursor = 'not-allowed';
-                    console.log('Campo bloqueado:', campo.id); // â† AGREGAR PARA DEBUG
+                    console.log('Campo bloqueado:', campo.id);
                 } else {
                     // Desbloquear campos
                     campo.disabled = false;
@@ -692,13 +689,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         MÃ©todo de Pago *
                     </label>
                     <select name="pagos[${pagoIndex}][id_met_pago]" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all metodo-pago" required>
-                        <option value="">Selecciona un mÃ©todo</option>
-                        <option value="1">Efectivo</option>
-                        <option value="2">Tarjeta de CrÃ©dito</option>
-                        <option value="3">Tarjeta de DÃ©bito</option>
-                        <option value="4">Yape</option>
-                        <option value="5">Plin</option>
-                        <option value="6">Transferencia</option>
+                        <option value="">Selecciona un método</option>
+                        @foreach($metodos as $metodo)
+                            <option value="{{ $metodo->id_met_pago }}">{{ $metodo->met_pago }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div>
