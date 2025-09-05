@@ -330,6 +330,43 @@
                     </div>
                 </div>
                 
+                <!-- Campos auxiliares solo para turno NOCHE -->
+                <div id="campos-auxiliares-noche" class="mt-4" style="display: none;">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-center mb-3">
+                            <i class='bx bx-moon text-blue-600 mr-2'></i>
+                            <h3 class="text-sm font-semibold text-blue-800">Horario Real (Solo Turno Noche)</h3>
+                        </div>
+                        <p class="text-xs text-blue-700 mb-3">
+                            Para turno noche, registra la fecha y hora real de ingreso del cliente
+                        </p>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <i class='bx bx-calendar mr-1'></i>
+                                    Fecha Real de Ingreso *
+                                </label>
+                                <input name="fecha_ingreso_real" id="fecha_ingreso_real" type="date" 
+                                    value="{{ old('fecha_ingreso_real', $estadia->fecha_ingreso_real ? $estadia->fecha_ingreso_real->format('Y-m-d') : '') }}"
+                                    class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all">
+                                <p class="text-xs text-gray-500 mt-1">Fecha real cuando llegó el cliente</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <i class='bx bx-time mr-1'></i>
+                                    Hora Real de Ingreso *
+                                </label>
+                                <input name="hora_ingreso_real" id="hora_ingreso_real" type="time" 
+                                    value="{{ old('hora_ingreso_real', $estadia->hora_ingreso_real) }}"
+                                    class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all">
+                                <p class="text-xs text-gray-500 mt-1">Hora real cuando llegó el cliente</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="mt-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         <i class='bx bx-home mr-1'></i>
@@ -462,28 +499,56 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-
     // === FUNCIONALIDAD SELECTOR DE TURNO ===
     const turnoRadios = document.querySelectorAll('.turno-radio');
     
+    console.log('Turno radios encontrados:', turnoRadios.length); // DEBUG
+    
+    function toggleCamposAuxiliares(valor) {
+        const camposAuxiliares = document.getElementById('campos-auxiliares-noche');
+        const fechaRealInput = document.getElementById('fecha_ingreso_real');
+        const horaRealInput = document.getElementById('hora_ingreso_real');
+        
+        console.log('Toggle campos auxiliares, valor:', valor); // DEBUG
+        console.log('Campos auxiliares encontrado:', !!camposAuxiliares); // DEBUG
+        
+        if (valor === '1') { // Turno NOCHE
+            console.log('Mostrando campos auxiliares'); // DEBUG
+            camposAuxiliares.style.display = 'block';
+            fechaRealInput.required = true;
+            horaRealInput.required = true;
+        } else { // Turno DÍA
+            console.log('Ocultando campos auxiliares'); // DEBUG
+            camposAuxiliares.style.display = 'none';
+            fechaRealInput.required = false;
+            horaRealInput.required = false;
+            fechaRealInput.value = '';
+            horaRealInput.value = '';
+        }
+    }
+    
     turnoRadios.forEach(radio => {
         radio.addEventListener('change', function() {
+            console.log('Radio cambiado, valor:', this.value); // DEBUG
+            
             // Remover selección previa
             document.querySelectorAll('.turno-button').forEach(btn => {
                 btn.classList.remove('selected');
             });
             
-            // Agregar selección actual
             if (this.checked) {
                 this.nextElementSibling.classList.add('selected');
+                toggleCamposAuxiliares(this.value);
             }
         });
     });
     
-    // Activar el turno preseleccionado visualmente
-    const turnoPreseleccionado = document.querySelector('input[name="turno"]:checked');
-    if (turnoPreseleccionado) {
-        turnoPreseleccionado.nextElementSibling.classList.add('selected');
+    // Inicializar estado al cargar
+    const turnoActivo = document.querySelector('input[name="turno"]:checked');
+    if (turnoActivo) {
+        console.log('Turno activo al cargar:', turnoActivo.value); // DEBUG
+        turnoActivo.nextElementSibling.classList.add('selected');
+        toggleCamposAuxiliares(turnoActivo.value);
     }
 
     // Auto-focus en el primer campo editable
@@ -554,7 +619,27 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelector('input[name="turno"]').focus();
             return false;
         }
+
+        // Validar campos auxiliares para turno NOCHE
+        if (turnoSeleccionado.value === '1') {
+            const fechaReal = document.getElementById('fecha_ingreso_real').value;
+            const horaReal = document.getElementById('hora_ingreso_real').value;
+            
+            if (!fechaReal || !horaReal) {
+                e.preventDefault();
+                alert('Para turno NOCHE debes completar la fecha y hora real');
+                return false;
+            }
+        }
     });
+
+    // Inicializar estado de campos auxiliares
+    const turnoPreseleccionado = document.querySelector('input[name="turno"]:checked');
+    if (turnoPreseleccionado && turnoPreseleccionado.value === '1') {
+        document.getElementById('campos-auxiliares-noche').style.display = 'block';
+        document.getElementById('fecha_ingreso_real').required = true;
+        document.getElementById('hora_ingreso_real').required = true;
+    }
 });
 </script>
 
