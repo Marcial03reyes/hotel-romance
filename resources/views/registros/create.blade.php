@@ -920,7 +920,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btnGuardarCliente.innerHTML = '<i class="bx bx-loader-alt mr-1"></i> Guardando...';
         
         try {
-            const response = await fetch('{{ route("clientes.store") }}', {
+            const response = await fetch('{{ route("clientes.store-ajax") }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

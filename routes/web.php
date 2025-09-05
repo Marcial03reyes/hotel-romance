@@ -107,7 +107,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('clientes', DimRegistroClienteController::class);
     // AGREGAR ESTA RUTA AQUÍ:
     Route::post('/clientes/store-ajax', [FactRegistroClienteController::class, 'storeCliente'])
-        ->name('clientes.store');
+        ->name('clientes.store-ajax');
 
     /*
     |----------------------------------------------------------------------
