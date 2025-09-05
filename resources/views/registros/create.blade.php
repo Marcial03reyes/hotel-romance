@@ -910,6 +910,11 @@ document.addEventListener('DOMContentLoaded', function() {
             nomInput.focus();
             return;
         }
+
+        // Obtener valores de campos adicionales
+        const estadoCivil = estadoCivilSelect.value;
+        const fechaNacimiento = fechaNacimientoInput.value;
+        const lugarNacimiento = lugarNacimientoInput.value;
         
         btnGuardarCliente.disabled = true;
         btnGuardarCliente.innerHTML = '<i class="bx bx-loader-alt mr-1"></i> Guardando...';
@@ -923,7 +928,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: JSON.stringify({
                     doc_identidad: doc,
-                    nombre_apellido: nombre
+                    nombre_apellido: nombre,
+                    estado_civil: estadoCivilSelect.value,
+                    fecha_nacimiento: fechaNacimientoInput.value, 
+                    lugar_nacimiento: lugarNacimientoInput.value
                 })
             });
             
