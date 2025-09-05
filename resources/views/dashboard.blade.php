@@ -344,27 +344,20 @@
             data: {
                 labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
                 datasets: [
-                    {
-                        label: 'Mañana',
-                        data: {!! json_encode(array_values($datosTurnos['Mañana'] ?? array_fill(0, 7, 0))) !!},
-                        backgroundColor: 'rgba(136, 166, 211, 0.8)',
-                        borderColor: '#88A6D3',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Tarde',
-                        data: {!! json_encode(array_values($datosTurnos['Tarde'] ?? array_fill(0, 7, 0))) !!},
-                        backgroundColor: 'rgba(107, 140, 199, 0.8)',
-                        borderColor: '#6B8CC7',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Noche',
-                        data: {!! json_encode(array_values($datosTurnos['Noche'] ?? array_fill(0, 7, 0))) !!},
-                        backgroundColor: 'rgba(74, 115, 184, 0.8)',
-                        borderColor: '#4A73B8',
-                        borderWidth: 1
-                    }
+                {
+                    label: 'Día',
+                    data: {!! json_encode(array_values($datosTurnos['Día'] ?? array_fill(0, 7, 0))) !!},
+                    backgroundColor: 'rgba(255, 193, 7, 0.8)',
+                    borderColor: '#FFC107',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Noche',
+                    data: {!! json_encode(array_values($datosTurnos['Noche'] ?? array_fill(0, 7, 0))) !!},
+                    backgroundColor: 'rgba(74, 115, 184, 0.8)',
+                    borderColor: '#4A73B8',
+                    borderWidth: 1
+                }
                 ]
             },
             options: {
