@@ -111,6 +111,13 @@
     .table-row:hover {
         border-left-color: var(--primary-color) !important;
     }
+
+    .fecha-real-indicator {
+        font-size: 0.65rem;
+        color: #2563eb;
+        font-style: italic;
+        margin-top: 2px;
+    }
 </style>
 
 <div class="container mx-auto py-6 px-4">
@@ -289,7 +296,11 @@
 
                             <!-- FECHA INGRESO --> 
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ \Carbon\Carbon::parse($r->fecha_ingreso)->format('d/m/Y') }}
+                                @if($r->fecha_ingreso_real)
+                                    {{ \Carbon\Carbon::parse($r->fecha_ingreso_real)->format('d/m/Y') }}
+                                @else
+                                    {{ \Carbon\Carbon::parse($r->fecha_ingreso)->format('d/m/Y') }}
+                                @endif
                             </td>
 
                             <!-- HABITACIÓN -->
@@ -311,7 +322,11 @@
 
                             <!-- HORA INGRESO -->
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ \Carbon\Carbon::createFromFormat('H:i:s', $r->hora_ingreso)->format('h:i A') }}
+                                @if($r->hora_ingreso_real)
+                                    {{ \Carbon\Carbon::createFromFormat('H:i:s', $r->hora_ingreso_real)->format('h:i A') }}
+                                @else
+                                    {{ \Carbon\Carbon::createFromFormat('H:i:s', $r->hora_ingreso)->format('h:i A') }}
+                                @endif
                             </td>
 
                             <!-- HORA SALIDA -->

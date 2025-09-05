@@ -186,6 +186,44 @@
                     <i class='bx bx-bed mr-2' style="color: #6B8CC7;"></i>
                     Detalles de la estadí­a
                 </h2>
+
+
+                <!-- Campos auxiliares solo para turno NOCHE -->
+                <div id="campos-auxiliares-noche" class="mt-4" style="display: none;">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-center mb-3">
+                            <i class='bx bx-moon text-blue-600 mr-2'></i>
+                            <h3 class="text-sm font-semibold text-blue-800">Horario Real (Solo Turno Noche)</h3>
+                        </div>
+                        <p class="text-xs text-blue-700 mb-3">
+                            Para turno noche, registra la fecha y hora real de ingreso del cliente
+                        </p>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <i class='bx bx-calendar mr-1'></i>
+                                    Fecha Real de Ingreso *
+                                </label>
+                                <input name="fecha_ingreso_real" id="fecha_ingreso_real" type="date" 
+                                    value="{{ now()->format('Y-m-d') }}"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <p class="text-xs text-gray-500 mt-1">Fecha real cuando llegó el cliente</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <i class='bx bx-time mr-1'></i>
+                                    Hora Real de Ingreso *
+                                </label>
+                                <input name="hora_ingreso_real" id="hora_ingreso_real" type="time" 
+                                    value="{{ now()->format('H:i') }}"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <p class="text-xs text-gray-500 mt-1">Hora real cuando llegó el cliente</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 
                 <div class="grid grid-cols-3 gap-4 mb-4">
                     <div>
@@ -535,19 +573,35 @@
 <!-- JavaScript Principal -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    
     // === FUNCIONALIDAD SELECTOR DE TURNO ===
     const turnoRadios = document.querySelectorAll('.turno-radio');
-    
     turnoRadios.forEach(radio => {
         radio.addEventListener('change', function() {
-            // Remover selecciÃ³n previa
+            // Remover selección previa
             document.querySelectorAll('.turno-button').forEach(btn => {
                 btn.classList.remove('selected');
             });
             
-            // Agregar selecciÃ³n actual
             if (this.checked) {
                 this.nextElementSibling.classList.add('selected');
+                
+                // Lógica de campos auxiliares
+                const camposAuxiliares = document.getElementById('campos-auxiliares-noche');
+                const fechaRealInput = document.getElementById('fecha_ingreso_real');
+                const horaRealInput = document.getElementById('hora_ingreso_real');
+                
+                if (this.value === '1') { // Turno NOCHE
+                    camposAuxiliares.style.display = 'block';
+                    fechaRealInput.required = true;
+                    horaRealInput.required = true;
+                } else { // Turno DÍA
+                    camposAuxiliares.style.display = 'none';
+                    fechaRealInput.required = false;
+                    horaRealInput.required = false;
+                    fechaRealInput.value = '';
+                    horaRealInput.value = '';
+                }
             }
         });
     });
@@ -984,7 +1038,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
         } catch (error) {
             console.error('Error completo:', error);
-            alert('âŒ Error de conexiÃ³n al guardar el cliente. Revisa la consola para mÃ¡s detalles.');
+            alert('Error de conexión al guardar el cliente. Revisa la consola para más detalles.');
             btnGuardarCliente.disabled = false;
             btnGuardarCliente.innerHTML = '<i class="bx bx-plus mr-1"></i> Guardar Cliente';
         }
@@ -1067,18 +1121,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // === VALIDACIÃ“N FINAL ===
+    // === VALIDACIÓN FINAL ===
     document.getElementById('form-registro').addEventListener('submit', function(e) {
         if (!clienteVerificado) {
             e.preventDefault();
-            alert('âŒ Debes verificar el cliente primero');
+            alert('Debes verificar el cliente primero');
             btnVerificar.focus();
             return false;
         }
         
         if (!clienteExistente && !clienteNuevoGuardado) {
             e.preventDefault();
-            alert('âŒ Para un cliente nuevo, debes guardarlo primero');
+            alert('Para un cliente nuevo, debes guardarlo primero');
             btnGuardarCliente.focus();
             return false;
         }
@@ -1088,7 +1142,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const input = document.querySelector(`[name="${campo}"]`);
             if (!input.value.trim()) {
                 e.preventDefault();
-                alert(`âŒ El campo ${campo.replace('_', ' ')} es obligatorio`);
+                alert(`El campo ${campo.replace('_', ' ')} es obligatorio`);
                 input.focus();
                 return false;
             }
@@ -1098,16 +1152,28 @@ document.addEventListener('DOMContentLoaded', function() {
         const turnoSeleccionado = document.querySelector('input[name="turno"]:checked');
         if (!turnoSeleccionado) {
             e.preventDefault();
-            alert('âŒ Debes seleccionar un turno (DÃA o NOCHE)');
+            alert('Debes seleccionar un turno (DÍA o NOCHE)');
             document.querySelector('input[name="turno"]').focus();
             return false;
+        }
+
+        // Validar campos auxiliares para turno NOCHE
+        if (turnoSeleccionado.value === '1') {
+            const fechaReal = document.getElementById('fecha_ingreso_real').value;
+            const horaReal = document.getElementById('hora_ingreso_real').value;
+            
+            if (!fechaReal || !horaReal) {
+                e.preventDefault();
+                alert('⚠ Para turno NOCHE debes completar la fecha y hora real');
+                return false;
+            }
         }
         
         // Validar tarifa
         const tarifaTotal = parseFloat(tarifaTotalInput.value) || 0;
         if (!tarifaTotal || tarifaTotal <= 0) {
             e.preventDefault();
-            alert('âŒ La tarifa total debe ser mayor a 0');
+            alert('¡La tarifa total debe ser mayor a 0!');
             tarifaTotalInput.focus();
             return false;
         }
@@ -1128,7 +1194,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (pagosValidos === 0) {
             e.preventDefault();
-            alert('âŒ Debe especificar al menos un mÃ©todo de pago vÃ¡lido');
+            alert('¡Debe especificar al menos un método de pago válido');
             return false;
         }
         
@@ -1136,9 +1202,9 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const diferencia = tarifaTotal - totalPagado;
             if (diferencia > 0) {
-                alert(`âŒ Falta S/ ${diferencia.toFixed(2)} por completar el pago total`);
+                alert(`Falta S/ ${diferencia.toFixed(2)} por completar el pago total`);
             } else {
-                alert(`âŒ Hay un exceso de S/ ${Math.abs(diferencia).toFixed(2)} en los pagos`);
+                alert(`Hay un exceso de S/ ${Math.abs(diferencia).toFixed(2)} en los pagos`);
             }
             return false;
         }
@@ -1147,7 +1213,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const habitacion = document.querySelector('[name="habitacion"]').value;
         const monto = document.querySelector('[name="monto"]').value;
         
-        const mensaje = `âœ… Â¿Confirmar registro?\n\nCliente: ${nombre}\nHabitaciÃ³n: ${habitacion}\nMonto: S/ ${monto}`;
+        const mensaje = `¿Confirmar registro?\n\nCliente: ${nombre}\nHabitación: ${habitacion}\nMonto: S/ ${monto}`;
         
         if (!confirm(mensaje)) {
             e.preventDefault();
@@ -1156,6 +1222,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         return true;
     });
+
+    // Inicializar estado de campos auxiliares
+    const turnoPreseleccionado = document.querySelector('input[name="turno"]:checked');
+    if (turnoPreseleccionado && turnoPreseleccionado.value === '1') {
+        document.getElementById('campos-auxiliares-noche').style.display = 'block';
+        document.getElementById('fecha_ingreso_real').required = true;
+        document.getElementById('hora_ingreso_real').required = true;
+    }
 });
 </script>
 

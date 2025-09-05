@@ -63,6 +63,8 @@ class FactRegistroClienteController extends Controller
                 'fr.obs',                           
                 'fr.fecha_ingreso',
                 'fr.turno',
+                'fr.fecha_ingreso_real',
+                'fr.hora_ingreso_real',   
                 DB::raw('COUNT(pp.id_compra) as consumo_count')
             )
             ->groupBy(
@@ -80,7 +82,9 @@ class FactRegistroClienteController extends Controller
                 'mp.met_pago',
                 'ph.boleta',
                 'fr.obs',
-                'fr.turno'                     
+                'fr.turno',
+                'fr.fecha_ingreso_real',
+                'fr.hora_ingreso_real',                      
             )
             ->orderByDesc('fr.id_estadia')
             ->get();
@@ -125,6 +129,8 @@ class FactRegistroClienteController extends Controller
             'fecha_ingreso' => 'required|date',
             'habitacion'    => 'required|in:201,202,203,204,205,206,207,208,209,210,301,302,303,304,305,306,307,308,309,310,401,402,403,404,405,406,407,408,409,410', 
             'turno'         => 'required|in:0,1',
+            'fecha_ingreso_real' => 'nullable|required_if:turno,1|date',
+            'hora_ingreso_real' => 'nullable|required_if:turno,1',
             'monto'         => 'required|numeric|min:0',
             'id_met_pago'   => 'required|exists:dim_met_pago,id_met_pago',
             'boleta'        => 'nullable|in:SI,NO',
@@ -139,7 +145,18 @@ class FactRegistroClienteController extends Controller
             $estadia->fecha_ingreso = $request->input('fecha_ingreso');
             $estadia->habitacion    = $request->input('habitacion');
             $estadia->obs           = $request->input('obs');
-            $estadia->turno         = $request->input('turno');    
+            $estadia->turno         = $request->input('turno');
+            
+            // Campos auxiliares solo para turno NOCHE
+            if ($request->input('turno') == 1) {
+                $estadia->fecha_ingreso_real = $request->input('fecha_ingreso_real');
+                $estadia->hora_ingreso_real = $request->input('hora_ingreso_real');
+            } else {
+                // Si cambia a turno DÍA, limpiar campos auxiliares
+                $estadia->fecha_ingreso_real = null;
+                $estadia->hora_ingreso_real = null;
+            }
+
             $estadia->save();
 
             $pago = FactPagoHab::where('id_estadia', $id)->first();
@@ -177,6 +194,8 @@ class FactRegistroClienteController extends Controller
                 'fecha_ingreso' => 'required|date',
                 'habitacion' => 'required|in:201,202,203,204,205,206,207,208,209,210,301,302,303,304,305,306,307,308,309,310,401,402,403,404,405,406,407,408,409,410', 
                 'turno' => 'required|in:0,1',
+                'fecha_ingreso_real' => 'nullable|required_if:turno,1|date',
+                'hora_ingreso_real' => 'nullable|required_if:turno,1',
                 'monto' => 'required|numeric|min:0',
                 'id_met_pago' => 'required|exists:dim_met_pago,id_met_pago',
                 'boleta' => 'nullable|in:SI,NO',
@@ -214,7 +233,14 @@ class FactRegistroClienteController extends Controller
             $fr->habitacion = $request->input('habitacion');
             $fr->doc_identidad = $doc;
             $fr->obs = $request->input('obs');
-            $fr->turno = $request->input('turno'); 
+            $fr->turno = $request->input('turno');
+            
+            // Campos auxiliares solo para turno NOCHE
+            if ($request->input('turno') == 1) {
+                $fr->fecha_ingreso_real = $request->input('fecha_ingreso_real');
+                $fr->hora_ingreso_real = $request->input('hora_ingreso_real');
+            }
+
             $fr->save();
 
             // 3) Pago principal
