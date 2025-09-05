@@ -93,6 +93,42 @@
         border-color: var(--primary-color);
         background: rgba(136, 166, 211, 0.1);
     }
+
+    .turno-button {
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .turno-radio:checked + .turno-button.turno-dia {
+        border-color: #f59e0b;
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .turno-radio:checked + .turno-button.turno-noche {
+        border-color: #3b82f6;
+        background: linear-gradient(135deg, #dbeafe, #93c5fd);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .turno-radio:checked + .turno-button::after {
+        content: '✓';
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: #10b981;
+        color: white;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+    }
 </style>
 
 <!-- Header -->
@@ -113,7 +149,7 @@
 
 <!-- Formulario -->
 <div class="form-container max-w-2xl mx-auto">
-    <form action="{{ route('gastos.store') }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ route('gastos.store') }}" method="POST">
         @csrf
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -194,6 +230,45 @@
                     <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                 @enderror
             </div>
+
+            <!-- Turno -->
+            <div class="space-y-2 md:col-span-2">
+                <label class="field-label block text-sm font-medium">
+                    <i class='bx bx-sun mr-1'></i>
+                    Turno de Trabajo
+                </label>
+                <p class="text-xs text-gray-500 mb-3">
+                    <i class='bx bx-info-circle mr-1'></i>
+                    Selecciona el turno en el que se realizó el gasto
+                </p>
+                
+                <div class="flex space-x-4">
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" name="turno" value="0" class="sr-only turno-radio" required>
+                        <div class="turno-button turno-dia border-2 border-gray-200 rounded-lg p-4 text-center transition-all hover:border-yellow-400 hover:bg-yellow-50">
+                            <i class='bx bx-sun text-3xl mb-2 text-yellow-600'></i>
+                            <div class="font-semibold text-gray-800">DÍA</div>
+                            <div class="text-xs text-gray-500 mt-1"></div>
+                        </div>
+                    </label>
+                    
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" name="turno" value="1" class="sr-only turno-radio" required>
+                        <div class="turno-button turno-noche border-2 border-gray-200 rounded-lg p-4 text-center transition-all hover:border-blue-400 hover:bg-blue-50">
+                            <i class='bx bx-moon text-3xl mb-2 text-blue-600'></i>
+                            <div class="font-semibold text-gray-800">NOCHE</div>
+                            <div class="text-xs text-gray-500 mt-1"></div>
+                        </div>
+                    </label>
+                </div>
+                
+                <div class="text-xs text-gray-500 text-center mt-3">
+                    * Campo obligatorio - Selecciona una opción para continuar
+                </div>
+                @error('turno')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
+            </div>
         </div>
 
         <!-- Campo Comprobante (ancho completo) -->
@@ -246,5 +321,26 @@
         </ul>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // === FUNCIONALIDAD SELECTOR DE TURNO ===
+    const turnoRadios = document.querySelectorAll('.turno-radio');
+    
+    turnoRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            // Remover selección previa
+            document.querySelectorAll('.turno-button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // Agregar selección actual
+            if (this.checked) {
+                this.nextElementSibling.classList.add('selected');
+            }
+        });
+    });
+});
+</script>
 
 @endsection

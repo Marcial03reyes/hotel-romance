@@ -237,7 +237,7 @@ class GraficaController extends Controller
      */
     private function getGastosMensualesHotel()
     {
-        // 1. Gastos generales del hotel
+        // Gastos generales del hotel
         $gastosGenerales = DB::table('fact_gastos_generales as fg')
             ->join('dim_tipo_gasto as tg', 'tg.id_tipo_gasto', '=', 'fg.id_tipo_gasto')
             ->selectRaw('
@@ -246,24 +246,12 @@ class GraficaController extends Controller
                 YEAR(fg.fecha_gasto) as anio,
                 SUM(fg.monto) as total_mes
             ')
+            ->where('tg.nombre', '!=', 'COMPRAS BODEGA')
             ->whereRaw('fg.fecha_gasto >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
             ->groupBy('tg.nombre', 'mes', 'anio')
             ->get();
 
-        // 2. Compras de productos internos del hotel
-        $comprasInternas = DB::table('fact_compra_interna as fci')
-            ->join('dim_productos_hotel as dph', 'dph.id_prod_hotel', '=', 'fci.id_prod_bod')
-            ->selectRaw('
-                dph.nombre as tipo_gasto,
-                MONTH(fci.fecha_compra) as mes,
-                YEAR(fci.fecha_compra) as anio,
-                SUM(fci.cantidad * fci.precio_unitario) as total_mes
-            ')
-            ->whereRaw('fci.fecha_compra >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
-            ->groupBy('dph.nombre', 'mes', 'anio')
-            ->get();
-
-        // 3. NUEVO: Gastos fijos (servicios) - Solo si existe la tabla
+        // Gastos fijos (servicios) - Solo si existe la tabla
         $gastosFijos = collect();
         if (Schema::hasTable('fact_pagos_gastos_fijos')) {
             $gastosFijos = DB::table('fact_pagos_gastos_fijos as fpgf')
@@ -278,8 +266,8 @@ class GraficaController extends Controller
                 ->get();
         }
 
-        // 4. Combinar todos los tipos de gastos del hotel
-        $todosLosGastosHotel = $gastosGenerales->concat($comprasInternas)->concat($gastosFijos);
+        // Combinar todos los tipos de gastos del hotel
+        $todosLosGastosHotel = $gastosGenerales->concat($gastosFijos);
         
         return $this->procesarGastosPorTipo($todosLosGastosHotel);
     }
@@ -303,28 +291,20 @@ class GraficaController extends Controller
             ->orderBy('mes')
             ->get();
 
-        // Gastos del hotel: generales + compras internas + gastos fijos
-        $gastosGenerales = DB::table('fact_gastos_generales')
+        // Gastos del hotel: solo generales (sin COMPRAS BODEGA) + gastos fijos
+        $gastosGenerales = DB::table('fact_gastos_generales as fg')
+            ->join('dim_tipo_gasto as tg', 'tg.id_tipo_gasto', '=', 'fg.id_tipo_gasto') // ← AGREGAR ESTE JOIN
             ->selectRaw('
-                MONTH(fecha_gasto) as mes,
-                YEAR(fecha_gasto) as anio,
-                SUM(monto) as total_gastos
+                MONTH(fg.fecha_gasto) as mes,
+                YEAR(fg.fecha_gasto) as anio,
+                SUM(fg.monto) as total_gastos
             ')
-            ->whereRaw('fecha_gasto >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
+            ->where('tg.nombre', '!=', 'COMPRAS BODEGA') 
+            ->whereRaw('fg.fecha_gasto >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
             ->groupBy('mes', 'anio')
             ->get();
 
-        $gastosComprasInternas = DB::table('fact_compra_interna')
-            ->selectRaw('
-                MONTH(fecha_compra) as mes,
-                YEAR(fecha_compra) as anio,
-                SUM(cantidad * precio_unitario) as total_gastos
-            ')
-            ->whereRaw('fecha_compra >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
-            ->groupBy('mes', 'anio')
-            ->get();
-
-        // NUEVO: Incluir gastos fijos
+        // Incluir gastos fijos
         $gastosFijos = DB::table('fact_pagos_gastos_fijos')
             ->selectRaw('
                 mes,
@@ -336,10 +316,7 @@ class GraficaController extends Controller
             ->get();
 
         // Combinar todos los tipos de gastos del hotel
-        $gastosTotalesHotel = $this->combinarGastos(
-            $this->combinarGastos($gastosGenerales, $gastosComprasInternas),
-            $gastosFijos
-        );
+        $gastosTotalesHotel = $this->combinarGastos($gastosGenerales, $gastosFijos);
         
         return $this->combinarDatos($ingresosHabitacion, $gastosTotalesHotel);
     }

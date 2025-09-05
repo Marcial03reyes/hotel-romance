@@ -143,6 +143,7 @@
                     <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Tipo de Gasto</th>
                     <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Monto</th>
                     <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Método Pago</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Turno</th>
                     <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Fecha</th>
                     <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Comprobante</th>
                     <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Acciones</th> 
@@ -150,16 +151,32 @@
             </thead>
             <tbody class="divide-y divide-gray-200" id="tableBody">
                 @forelse($gastos as $g)
-                    <tr class="table-row" data-search="{{ strtolower($g->tipo . ' ' . $g->monto . ' ' . $g->fecha_gasto . ' ' . ($g->comprobante ?? '')) }}">
+                    <tr class="table-row" data-search="{{ strtolower($g->tipo . ' ' . $g->monto . ' ' . $g->fecha_gasto . ' ' . ($g->comprobante ?? '') . ' ' . ($g->turno == 0 ? 'dia' : 'noche')) }}">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="badge badge-tipo">{{ $g->tipo }}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="badge badge-monto">S/{{ number_format($g->monto, 2) }}</span>
                         </td>
+
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {{ $g->met_pago }}
                         </td>
+
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            @if($g->turno == 0)
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    <i class='bx bx-sun mr-1'></i>
+                                    Día
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <i class='bx bx-moon mr-1'></i>
+                                    Noche
+                                </span>
+                            @endif
+                        </td>
+
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="badge badge-fecha">{{ \Carbon\Carbon::parse($g->fecha_gasto)->format('d/m/Y') }}</span>
                         </td>
@@ -193,7 +210,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">
                             <i class='bx bx-wallet text-4xl mb-2 block'></i>
                             No hay gastos variables registrados
                         </td>
