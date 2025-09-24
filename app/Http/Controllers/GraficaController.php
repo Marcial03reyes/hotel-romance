@@ -24,72 +24,179 @@ class GraficaController extends Controller
             'datosGraficos'
         ));
     }
-    
+
     /**
-     * Obtener gastos específicos de la BODEGA (solo para análisis separado si es necesario)
-     * CORREGIDO: Ya no necesario porque COMPRAS BODEGA está en gastos generales
+     * Función auxiliar para determinar el período basado en una fecha
+     * Retorna array con mes_inicio, año_inicio, mes_fin, año_fin, nombre_periodo
      */
-    private function getGastosMensualesBodega()
+    private function getPeriodoFromDate($fecha)
     {
-        // OPCIÓN 1: Si quieres mantener análisis separado de bodega, solo mostrar categoría
-        $comprasBodega = DB::table('fact_gastos_generales as fg')
-            ->join('dim_tipo_gasto as tg', 'tg.id_tipo_gasto', '=', 'fg.id_tipo_gasto')
-            ->selectRaw('
-                "COMPRAS BODEGA" as producto,
-                MONTH(fg.fecha_gasto) as mes,
-                YEAR(fg.fecha_gasto) as anio,
-                SUM(fg.monto) as total_mes
-            ')
-            ->where('tg.nombre', 'COMPRAS BODEGA')
-            ->whereRaw('fg.fecha_gasto >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
-            ->groupBy('mes', 'anio')
-            ->get();
-            
-        return $this->procesarGastosPorTipo($comprasBodega, 'producto');
+        $carbon = Carbon::parse($fecha);
+        $dia = $carbon->day;
         
-        // OPCIÓN 2: Si no necesitas análisis separado, retorna array vacío
-        // return ['gastosPorTipo' => [], 'meses' => [], 'totalesPorMes' => []];
+        if ($dia >= 15) {
+            // Del 15 en adelante pertenece al período actual (15 de este mes al 14 del siguiente)
+            $mesInicio = $carbon->month;
+            $anioInicio = $carbon->year;
+            $mesFin = $carbon->month == 12 ? 1 : $carbon->month + 1;
+            $anioFin = $carbon->month == 12 ? $carbon->year + 1 : $carbon->year;
+        } else {
+            // Del 1 al 14 pertenece al período anterior (15 del mes anterior al 14 de este mes)
+            $mesInicio = $carbon->month == 1 ? 12 : $carbon->month - 1;
+            $anioInicio = $carbon->month == 1 ? $carbon->year - 1 : $carbon->year;
+            $mesFin = $carbon->month;
+            $anioFin = $carbon->year;
+        }
+
+        return [
+            'mes_inicio' => $mesInicio,
+            'anio_inicio' => $anioInicio,
+            'mes_fin' => $mesFin,
+            'anio_fin' => $anioFin,
+            'nombre_periodo' => $this->getNombreMesCorto($mesInicio) . '-' . $this->getNombreMesCorto($mesFin),
+            'clave_periodo' => $anioInicio . '-' . str_pad($mesInicio, 2, '0', STR_PAD_LEFT)
+        ];
+    }
+
+    /**
+     * Generar los periodos donde hay registros
+     */
+    private function getPeriodosConDatos()
+    {
+        // Obtener el rango de fechas de todos los datos
+        $fechaMinima = DB::selectOne("
+            SELECT MIN(fecha) as min_fecha FROM (
+                SELECT MIN(fecha_ingreso) as fecha FROM fact_registro_clientes
+                UNION ALL
+                SELECT MIN(fecha_gasto) as fecha FROM fact_gastos_generales
+                UNION ALL
+                SELECT MIN(fecha_pago) as fecha FROM fact_pagos_gastos_fijos WHERE fecha_pago IS NOT NULL
+            ) t WHERE fecha IS NOT NULL
+        ")->min_fecha;
+        
+        $fechaMaxima = DB::selectOne("
+            SELECT MAX(fecha) as max_fecha FROM (
+                SELECT MAX(fecha_ingreso) as fecha FROM fact_registro_clientes
+                UNION ALL
+                SELECT MAX(fecha_gasto) as fecha FROM fact_gastos_generales
+                UNION ALL
+                SELECT MAX(fecha_pago) as fecha FROM fact_pagos_gastos_fijos WHERE fecha_pago IS NOT NULL
+            ) t WHERE fecha IS NOT NULL
+        ")->max_fecha;
+        
+        if (!$fechaMinima || !$fechaMaxima) {
+            return [];
+        }
+        
+        // CORRECCIÓN: Determinar el período correcto para la fecha mínima
+        $periodoMinimo = $this->getPeriodoFromDate($fechaMinima);
+        $periodoMaximo = $this->getPeriodoFromDate($fechaMaxima);
+        
+        $periodos = [];
+        
+        // Comenzar desde el período que contiene la fecha mínima
+        $fechaActual = Carbon::createFromDate($periodoMinimo['anio_inicio'], $periodoMinimo['mes_inicio'], 1);
+        $fechaLimite = Carbon::createFromDate($periodoMaximo['anio_fin'], $periodoMaximo['mes_fin'], 1);
+        
+        while ($fechaActual <= $fechaLimite) {
+            // Usar día 15 para obtener el período correcto
+            $fechaRef = $fechaActual->copy()->day(15);
+            $periodo = $this->getPeriodoFromDate($fechaRef);
+            
+            $periodos[$periodo['clave_periodo']] = $periodo;
+            
+            $fechaActual->addMonth();
+        }
+        
+        return $periodos;
     }
     
     /**
-     * Procesar datos de gastos por tipo/producto
+     * Obtener gastos específicos de la BODEGA
      */
-    private function procesarGastosPorTipo($gastos, $campo = 'tipo_gasto')
+    private function getGastosMensualesBodega()
     {
-        // Organizar datos por tipo de gasto/producto y mes
+        $ultimosPeriodos = $this->getPeriodosConDatos();
+        
+        // Usar UNION ALL para cada período
+        $queries = [];
+        foreach ($ultimosPeriodos as $periodo) {
+            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
+            $fechaFin = $periodo['anio_fin'] . '-' . str_pad($periodo['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+            
+            $queries[] = "(
+                SELECT 
+                    'COMPRAS BODEGA' as producto,
+                    '{$periodo['clave_periodo']}' as periodo_clave,
+                    SUM(fg.monto) as total_periodo
+                FROM fact_gastos_generales fg
+                INNER JOIN dim_tipo_gasto tg ON tg.id_tipo_gasto = fg.id_tipo_gasto
+                WHERE tg.nombre = 'COMPRAS BODEGA'
+                    AND fg.fecha_gasto >= '{$fechaInicio}'
+                    AND fg.fecha_gasto <= '{$fechaFin}'
+            )";
+        }
+        
+        $unionQuery = implode(' UNION ALL ', $queries);
+        $comprasBodega = collect(DB::select($unionQuery));
+            
+        return $this->procesarGastosPorPeriodo($comprasBodega, 'producto', $ultimosPeriodos);
+    }
+    
+    /**
+     * Procesar datos de gastos por tipo/producto y período
+     */
+    private function procesarGastosPorPeriodo($gastos, $campo = 'tipo_gasto', $ultimosPeriodos = null)
+    {
+        if (!$ultimosPeriodos) {
+            $ultimosPeriodos = $this->getPeriodosConDatos();
+        }
+        
+        // Organizar datos por tipo de gasto/producto y período
         $gastosPorTipo = [];
-        $meses = [];
         
         foreach ($gastos as $gasto) {
-            $mesNombre = $this->getNombreMesCorto($gasto->mes);
-            $meses[$gasto->mes] = $mesNombre;
-            
             $tipoKey = $campo === 'producto' ? $gasto->producto : $gasto->tipo_gasto;
             
             if (!isset($gastosPorTipo[$tipoKey])) {
                 $gastosPorTipo[$tipoKey] = [];
             }
             
-            $gastosPorTipo[$tipoKey][$gasto->mes] = $gasto->total_mes;
+            $gastosPorTipo[$tipoKey][$gasto->periodo_clave] = $gasto->total_periodo;
         }
         
-        // Ordenar meses en orden ascendente (más antiguo primero)
-        ksort($meses);
+        // Crear array de períodos ordenados con nombres
+        $periodos = [];
+        foreach ($ultimosPeriodos as $clave => $periodo) {
+            $periodos[$clave] = $periodo['nombre_periodo'];
+        }
         
-        // Calcular totales por mes
-        $totalesPorMes = [];
-        foreach ($meses as $mesNum => $mesNombre) {
+        // Calcular totales por período
+        $totalesPorPeriodo = [];
+        foreach ($periodos as $clave => $nombre) {
             $total = 0;
-            foreach ($gastosPorTipo as $tipo => $mesesData) {
-                $total += $mesesData[$mesNum] ?? 0;
+            foreach ($gastosPorTipo as $tipo => $periodosData) {
+                $total += $periodosData[$clave] ?? 0;
             }
-            $totalesPorMes[$mesNum] = $total;
+            $totalesPorPeriodo[$clave] = $total;
         }
-        
+
+        // Filtrar períodos sin datos - versión más eficiente
+        $periodosConDatos = [];
+        $totalesConDatos = [];
+
+        foreach ($periodos as $clave => $nombre) {
+            // Si el total del período es mayor a 0, entonces tiene datos
+            if ($totalesPorPeriodo[$clave] > 0) {
+                $periodosConDatos[$clave] = $nombre;
+                $totalesConDatos[$clave] = $totalesPorPeriodo[$clave];
+            }
+        }
+
         return [
             'gastosPorTipo' => $gastosPorTipo,
-            'meses' => $meses,
-            'totalesPorMes' => $totalesPorMes
+            'meses' => $periodosConDatos, // Solo períodos con datos
+            'totalesPorMes' => $totalesConDatos
         ];
     }
     
@@ -101,7 +208,7 @@ class GraficaController extends Controller
         // Datos para HOTEL
         $datosHotel = $this->getDatosHotel();
         
-        // Datos para BODEGA (opcional, o puede ser parte del hotel)
+        // Datos para BODEGA
         $datosBodega = $this->getDatosBodega();
         
         return [
@@ -112,57 +219,66 @@ class GraficaController extends Controller
     
     /**
      * Obtener datos de ingresos y gastos de la BODEGA para gráficos
-     * CORREGIDO: Solo si quieres mantener análisis separado de bodega
      */
     private function getDatosBodega()
     {
-        // Ingresos de bodega (ventas de productos a huéspedes)
-        $ingresos = DB::table('fact_pago_prod as fpp')
-            ->join('fact_registro_clientes as frc', 'frc.id_estadia', '=', 'fpp.id_estadia')
-            ->selectRaw('
-                MONTH(frc.fecha_ingreso) as mes,
-                YEAR(frc.fecha_ingreso) as anio,
-                SUM(fpp.cantidad * fpp.precio_unitario) as total_ingresos
-            ')
-            ->whereRaw('frc.fecha_ingreso >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
-            ->groupBy('mes', 'anio')
-            ->orderBy('anio')
-            ->orderBy('mes')
-            ->get();
+        $ultimosPeriodos = $this->getPeriodosConDatos();
+        
+        // Ingresos de bodega usando UNION ALL
+        $queriesIngresos = [];
+        foreach ($ultimosPeriodos as $periodo) {
+            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
+            $fechaFin = $periodo['anio_fin'] . '-' . str_pad($periodo['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
             
-        // GASTOS DE BODEGA: Solo la categoría COMPRAS BODEGA de gastos generales
-        $gastos = DB::table('fact_gastos_generales as fg')
-            ->join('dim_tipo_gasto as tg', 'tg.id_tipo_gasto', '=', 'fg.id_tipo_gasto')
-            ->selectRaw('
-                MONTH(fg.fecha_gasto) as mes,
-                YEAR(fg.fecha_gasto) as anio,
-                SUM(fg.monto) as total_gastos
-            ')
-            ->where('tg.nombre', 'COMPRAS BODEGA')
-            ->whereRaw('fg.fecha_gasto >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
-            ->groupBy('mes', 'anio')
-            ->orderBy('anio')
-            ->orderBy('mes')
-            ->get();
+            $queriesIngresos[] = "(
+                SELECT 
+                    '{$periodo['clave_periodo']}' as periodo_clave,
+                    SUM(fpp.cantidad * fpp.precio_unitario) as total_ingresos
+                FROM fact_pago_prod fpp
+                INNER JOIN fact_registro_clientes frc ON frc.id_estadia = fpp.id_estadia
+                WHERE frc.fecha_ingreso >= '{$fechaInicio}'
+                    AND frc.fecha_ingreso <= '{$fechaFin}'
+            )";
+        }
+        
+        $unionQueryIngresos = implode(' UNION ALL ', $queriesIngresos);
+        $ingresos = collect(DB::select($unionQueryIngresos));
             
-        return $this->combinarDatos($ingresos, $gastos);
+        // Gastos de bodega usando UNION ALL
+        $queriesGastos = [];
+        foreach ($ultimosPeriodos as $periodo) {
+            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
+            $fechaFin = $periodo['anio_fin'] . '-' . str_pad($periodo['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+            
+            $queriesGastos[] = "(
+                SELECT 
+                    '{$periodo['clave_periodo']}' as periodo_clave,
+                    SUM(fg.monto) as total_gastos
+                FROM fact_gastos_generales fg
+                INNER JOIN dim_tipo_gasto tg ON tg.id_tipo_gasto = fg.id_tipo_gasto
+                WHERE tg.nombre = 'COMPRAS BODEGA'
+                    AND fg.fecha_gasto >= '{$fechaInicio}'
+                    AND fg.fecha_gasto <= '{$fechaFin}'
+            )";
+        }
+        
+        $unionQueryGastos = implode(' UNION ALL ', $queriesGastos);
+        $gastos = collect(DB::select($unionQueryGastos));
+            
+        return $this->combinarDatosPorPeriodos($ingresos, $gastos, $ultimosPeriodos);
     }
     
     /**
-     * Combinar datos de ingresos y gastos por mes
+     * Combinar datos de ingresos y gastos por período
      */
-    private function combinarDatos($ingresos, $gastos)
+    private function combinarDatosPorPeriodos($ingresos, $gastos, $ultimosPeriodos)
     {
-        $mesesCompletos = [];
+        $periodosCompletos = [];
         
-        // Generar array de últimos 12 meses
-        for ($i = 11; $i >= 0; $i--) {
-            $fecha = Carbon::now()->subMonths($i);
-            $mesKey = $fecha->month . '-' . $fecha->year;
-            $mesesCompletos[$mesKey] = [
-                'mes' => $fecha->month,
-                'anio' => $fecha->year,
-                'nombre' => $this->getNombreMesCorto($fecha->month) . ' ' . $fecha->year,
+        // Inicializar todos los períodos con valores en 0
+        foreach ($ultimosPeriodos as $clave => $periodo) {
+            $periodosCompletos[$clave] = [
+                'nombre' => $periodo['nombre_periodo'],
                 'ingresos' => 0,
                 'gastos' => 0
             ];
@@ -170,27 +286,26 @@ class GraficaController extends Controller
         
         // Llenar ingresos
         foreach ($ingresos as $ingreso) {
-            $key = $ingreso->mes . '-' . $ingreso->anio;
-            if (isset($mesesCompletos[$key])) {
-                $mesesCompletos[$key]['ingresos'] = (float) $ingreso->total_ingresos;
+            if (isset($periodosCompletos[$ingreso->periodo_clave])) {
+                $periodosCompletos[$ingreso->periodo_clave]['ingresos'] = (float) $ingreso->total_ingresos;
             }
         }
         
         // Llenar gastos
         foreach ($gastos as $gasto) {
-            $key = $gasto->mes . '-' . $gasto->anio;
-            if (isset($mesesCompletos[$key])) {
-                $mesesCompletos[$key]['gastos'] = (float) $gasto->total_gastos;
+            if (isset($periodosCompletos[$gasto->periodo_clave])) {
+                $periodosCompletos[$gasto->periodo_clave]['gastos'] = (float) $gasto->total_gastos;
             }
-        }
-        
-        return array_values($mesesCompletos);
+        }    
+
+        // Filtrar períodos sin datos (ni ingresos ni gastos)
+        $periodosConDatos = array_filter($periodosCompletos, function($periodo) {
+            return $periodo['ingresos'] > 0 || $periodo['gastos'] > 0;
+        });
+
+        return array_values($periodosConDatos);
     }
 
-    /**
-     * ELIMINADO: Ya no necesitamos combinarGastos porque solo usamos gastos generales
-     */
-    
     /* Obtener nombre completo del mes */
     private function getNombreMes($numeroMes)
     {
@@ -218,148 +333,219 @@ class GraficaController extends Controller
     /* Obtener gastos fijos para incluir en gráficos y cuadre de caja */
     private function getGastosFijos()
     {
+        $ultimosPeriodos = $this->getPeriodosConDatos();
+        
+        // Para gastos fijos usamos la fecha de pago
+        $condicionesPeriodos = [];
+        foreach ($ultimosPeriodos as $periodo) {
+            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
+            $fechaFin = $periodo['anio_fin'] . '-' . str_pad($periodo['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+            
+            $condicionesPeriodos[] = "WHEN fpgf.fecha_pago >= '{$fechaInicio}' AND fpgf.fecha_pago <= '{$fechaFin}' THEN '{$periodo['clave_periodo']}'";
+        }
+        
+        $casosPeriodos = implode(' ', $condicionesPeriodos);
+
         $gastosFijos = DB::table('fact_pagos_gastos_fijos as fpgf')
             ->join('fact_gastos_fijos as fgf', 'fgf.id_gasto_fijo', '=', 'fpgf.id_gasto_fijo')
             ->selectRaw('
                 fgf.nombre_servicio as tipo_gasto,
-                fpgf.mes,
-                fpgf.anio,
-                fpgf.monto_pagado as total_mes
+                CASE ' . $casosPeriodos . ' END as periodo_clave,
+                SUM(fpgf.monto_pagado) as total_periodo
             ')
-            ->whereRaw('fpgf.fecha_pago >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
+            ->whereRaw('fpgf.fecha_pago >= ?', [
+                array_values($ultimosPeriodos)[0]['anio_inicio'] . '-' . 
+                str_pad(array_values($ultimosPeriodos)[0]['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15'
+            ])
+            ->groupByRaw('fgf.nombre_servicio, CASE ' . $casosPeriodos . ' END')
+            ->havingRaw('CASE ' . $casosPeriodos . ' END IS NOT NULL')
             ->get();
 
-        return $this->procesarGastosPorTipo($gastosFijos);
+        return $this->procesarGastosPorPeriodo($gastosFijos, 'tipo_gasto', $ultimosPeriodos);
     }
 
     /**
-     * Modificar el método getGastosMensualesHotel() para incluir gastos fijos
+     * Obtener gastos mensuales del hotel incluyendo gastos fijos
      */
     private function getGastosMensualesHotel()
     {
-        // Gastos generales del hotel
-        $gastosGenerales = DB::table('fact_gastos_generales as fg')
-            ->join('dim_tipo_gasto as tg', 'tg.id_tipo_gasto', '=', 'fg.id_tipo_gasto')
-            ->selectRaw('
-                tg.nombre as tipo_gasto,
-                MONTH(fg.fecha_gasto) as mes,
-                YEAR(fg.fecha_gasto) as anio,
-                SUM(fg.monto) as total_mes
-            ')
-            ->where('tg.nombre', '!=', 'COMPRAS BODEGA')
-            ->whereRaw('fg.fecha_gasto >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
-            ->groupBy('tg.nombre', 'mes', 'anio')
-            ->get();
+        $ultimosPeriodos = $this->getPeriodosConDatos();
+        
+        // Usar UNION ALL para cada período para evitar problemas de GROUP BY
+        $queries = [];
+        foreach ($ultimosPeriodos as $periodo) {
+            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
+            $fechaFin = $periodo['anio_fin'] . '-' . str_pad($periodo['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+            
+            $queries[] = "(
+                SELECT 
+                    tg.nombre as tipo_gasto,
+                    '{$periodo['clave_periodo']}' as periodo_clave,
+                    SUM(fg.monto) as total_periodo
+                FROM fact_gastos_generales fg
+                INNER JOIN dim_tipo_gasto tg ON tg.id_tipo_gasto = fg.id_tipo_gasto
+                WHERE tg.nombre != 'COMPRAS BODEGA'
+                    AND fg.fecha_gasto >= '{$fechaInicio}'
+                    AND fg.fecha_gasto <= '{$fechaFin}'
+                GROUP BY tg.nombre
+            )";
+        }
+        
+        $unionQuery = implode(' UNION ALL ', $queries);
+        $gastosGenerales = collect(DB::select($unionQuery));
 
         // Gastos fijos (servicios) - Solo si existe la tabla
         $gastosFijos = collect();
         if (Schema::hasTable('fact_pagos_gastos_fijos')) {
-            $gastosFijos = DB::table('fact_pagos_gastos_fijos as fpgf')
-                ->join('fact_gastos_fijos as fgf', 'fgf.id_gasto_fijo', '=', 'fpgf.id_gasto_fijo')
-                ->selectRaw('
-                    fgf.nombre_servicio as tipo_gasto,
-                    fpgf.mes,
-                    fpgf.anio,
-                    fpgf.monto_pagado as total_mes
-                ')
-                ->whereRaw('fpgf.fecha_pago >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
-                ->get();
+            $queriesGastosFijos = [];
+            foreach ($ultimosPeriodos as $periodo) {
+                $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
+                $fechaFin = $periodo['anio_fin'] . '-' . str_pad($periodo['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+                
+                $queriesGastosFijos[] = "(
+                    SELECT 
+                        fgf.nombre_servicio as tipo_gasto,
+                        '{$periodo['clave_periodo']}' as periodo_clave,
+                        SUM(fpgf.monto_pagado) as total_periodo
+                    FROM fact_pagos_gastos_fijos fpgf
+                    INNER JOIN fact_gastos_fijos fgf ON fgf.id_gasto_fijo = fpgf.id_gasto_fijo
+                    WHERE fpgf.fecha_pago >= '{$fechaInicio}'
+                        AND fpgf.fecha_pago <= '{$fechaFin}'
+                    GROUP BY fgf.nombre_servicio
+                )";
+            }
+            
+            if (!empty($queriesGastosFijos)) {
+                $unionQueryGastosFijos = implode(' UNION ALL ', $queriesGastosFijos);
+                $gastosFijos = collect(DB::select($unionQueryGastosFijos));
+            }
         }
 
         // Combinar todos los tipos de gastos del hotel
         $todosLosGastosHotel = $gastosGenerales->concat($gastosFijos);
         
-        return $this->procesarGastosPorTipo($todosLosGastosHotel);
+        return $this->procesarGastosPorPeriodo($todosLosGastosHotel, 'tipo_gasto', $ultimosPeriodos);
     }
 
     /**
-     * Modificar getDatosHotel() para incluir gastos fijos en los gráficos
+     * Obtener datos del hotel para gráficos
      */
     private function getDatosHotel()
     {
-        // Ingresos del hotel (solo habitaciones)
-        $ingresosHabitacion = DB::table('fact_pago_hab as fph')
-            ->join('fact_registro_clientes as frc', 'frc.id_estadia', '=', 'fph.id_estadia')
-            ->selectRaw('
-                MONTH(frc.fecha_ingreso) as mes,
-                YEAR(frc.fecha_ingreso) as anio,
-                SUM(fph.monto) as total_ingresos
-            ')
-            ->whereRaw('frc.fecha_ingreso >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
-            ->groupBy('mes', 'anio')
-            ->orderBy('anio')
-            ->orderBy('mes')
-            ->get();
+        $ultimosPeriodos = $this->getPeriodosConDatos();
 
-        // Gastos del hotel: solo generales (sin COMPRAS BODEGA) + gastos fijos
-        $gastosGenerales = DB::table('fact_gastos_generales as fg')
-            ->join('dim_tipo_gasto as tg', 'tg.id_tipo_gasto', '=', 'fg.id_tipo_gasto') // ← AGREGAR ESTE JOIN
-            ->selectRaw('
-                MONTH(fg.fecha_gasto) as mes,
-                YEAR(fg.fecha_gasto) as anio,
-                SUM(fg.monto) as total_gastos
-            ')
-            ->where('tg.nombre', '!=', 'COMPRAS BODEGA') 
-            ->whereRaw('fg.fecha_gasto >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
-            ->groupBy('mes', 'anio')
-            ->get();
+        // Ingresos del hotel usando UNION ALL
+        $queriesIngresos = [];
+        foreach ($ultimosPeriodos as $periodo) {
+            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
+            $fechaFin = $periodo['anio_fin'] . '-' . str_pad($periodo['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+            
+            $queriesIngresos[] = "(
+                SELECT 
+                    '{$periodo['clave_periodo']}' as periodo_clave,
+                    SUM(fph.monto) as total_ingresos
+                FROM fact_pago_hab fph
+                INNER JOIN fact_registro_clientes frc ON frc.id_estadia = fph.id_estadia
+                WHERE frc.fecha_ingreso >= '{$fechaInicio}'
+                    AND frc.fecha_ingreso <= '{$fechaFin}'
+            )";
+        }
+        
+        $unionQueryIngresos = implode(' UNION ALL ', $queriesIngresos);
+        $ingresosHabitacion = collect(DB::select($unionQueryIngresos));
+
+        // Gastos generales del hotel usando UNION ALL
+        $queriesGastos = [];
+        foreach ($ultimosPeriodos as $periodo) {
+            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
+            $fechaFin = $periodo['anio_fin'] . '-' . str_pad($periodo['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+            
+            $queriesGastos[] = "(
+                SELECT 
+                    '{$periodo['clave_periodo']}' as periodo_clave,
+                    SUM(fg.monto) as total_gastos
+                FROM fact_gastos_generales fg
+                INNER JOIN dim_tipo_gasto tg ON tg.id_tipo_gasto = fg.id_tipo_gasto
+                WHERE tg.nombre != 'COMPRAS BODEGA'
+                    AND fg.fecha_gasto >= '{$fechaInicio}'
+                    AND fg.fecha_gasto <= '{$fechaFin}'
+            )";
+        }
+        
+        $unionQueryGastos = implode(' UNION ALL ', $queriesGastos);
+        $gastosGenerales = collect(DB::select($unionQueryGastos));
 
         // Incluir gastos fijos
-        $gastosFijos = DB::table('fact_pagos_gastos_fijos')
-            ->selectRaw('
-                mes,
-                anio,
-                SUM(monto_pagado) as total_gastos
-            ')
-            ->whereRaw('fecha_pago >= DATE_SUB(NOW(), INTERVAL 12 MONTH)')
-            ->groupBy('mes', 'anio')
-            ->get();
+        $gastosFijos = collect();
+        if (Schema::hasTable('fact_pagos_gastos_fijos')) {
+            $queriesGastosFijos = [];
+            foreach ($ultimosPeriodos as $periodo) {
+                $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
+                $fechaFin = $periodo['anio_fin'] . '-' . str_pad($periodo['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+                
+                $queriesGastosFijos[] = "(
+                    SELECT 
+                        '{$periodo['clave_periodo']}' as periodo_clave,
+                        SUM(monto_pagado) as total_gastos
+                    FROM fact_pagos_gastos_fijos
+                    WHERE fecha_pago >= '{$fechaInicio}'
+                        AND fecha_pago <= '{$fechaFin}'
+                )";
+            }
+            
+            if (!empty($queriesGastosFijos)) {
+                $unionQueryGastosFijos = implode(' UNION ALL ', $queriesGastosFijos);
+                $gastosFijos = collect(DB::select($unionQueryGastosFijos));
+            }
+        }
 
-        // Combinar todos los tipos de gastos del hotel
-        $gastosTotalesHotel = $this->combinarGastos($gastosGenerales, $gastosFijos);
+        // Combinar gastos
+        $gastosTotalesHotel = $this->combinarGastosPorPeriodos($gastosGenerales, $gastosFijos, $ultimosPeriodos);
         
-        return $this->combinarDatos($ingresosHabitacion, $gastosTotalesHotel);
+        return $this->combinarDatosPorPeriodos($ingresosHabitacion, $gastosTotalesHotel, $ultimosPeriodos);
     }
 
     /**
-     * Obtener total de gastos fijos del mes actual para el dashboard
+     * Obtener total de gastos fijos del período actual para el dashboard
      */
-    public function getTotalGastosFijosMesActual()
+    public function getTotalGastosFijosPeriodoActual()
     {
+        $periodoActual = $this->getPeriodoFromDate(Carbon::now());
+        
+        $fechaInicio = $periodoActual['anio_inicio'] . '-' . str_pad($periodoActual['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
+        $fechaFin = $periodoActual['anio_fin'] . '-' . str_pad($periodoActual['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+        
         return DB::table('fact_pagos_gastos_fijos')
-            ->whereMonth('fecha_pago', now()->month)
-            ->whereYear('fecha_pago', now()->year)
+            ->whereBetween('fecha_pago', [$fechaInicio, $fechaFin])
             ->sum('monto_pagado');
     }
 
     /**
-     * Combinar dos arrays de gastos sumando los totales por mes
+     * Combinar dos arrays de gastos por períodos
      */
-    private function combinarGastos($gastos1, $gastos2)
+    private function combinarGastosPorPeriodos($gastos1, $gastos2, $ultimosPeriodos)
     {
         $gastosCombinados = [];
         
+        // Inicializar todos los períodos con 0
+        foreach ($ultimosPeriodos as $clave => $periodo) {
+            $gastosCombinados[$clave] = (object)[
+                'periodo_clave' => $clave,
+                'total_gastos' => 0
+            ];
+        }
+        
         // Procesar primeros gastos
         foreach ($gastos1 as $gasto) {
-            $key = $gasto->mes . '-' . $gasto->anio;
-            $gastosCombinados[$key] = (object)[
-                'mes' => $gasto->mes,
-                'anio' => $gasto->anio,
-                'total_gastos' => $gasto->total_gastos
-            ];
+            if (isset($gastosCombinados[$gasto->periodo_clave])) {
+                $gastosCombinados[$gasto->periodo_clave]->total_gastos += $gasto->total_gastos;
+            }
         }
         
         // Sumar segundos gastos
         foreach ($gastos2 as $gasto) {
-            $key = $gasto->mes . '-' . $gasto->anio;
-            if (isset($gastosCombinados[$key])) {
-                $gastosCombinados[$key]->total_gastos += $gasto->total_gastos;
-            } else {
-                $gastosCombinados[$key] = (object)[
-                    'mes' => $gasto->mes,
-                    'anio' => $gasto->anio,
-                    'total_gastos' => $gasto->total_gastos
-                ];
+            if (isset($gastosCombinados[$gasto->periodo_clave])) {
+                $gastosCombinados[$gasto->periodo_clave]->total_gastos += $gasto->total_gastos;
             }
         }
         

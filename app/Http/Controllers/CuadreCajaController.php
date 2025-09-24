@@ -11,108 +11,188 @@ class CuadreCajaController extends Controller
 {
     public function index(Request $request)
     {
-        // Determinar el período de consulta según los filtros
-        $fechaInicio = $this->getFechaInicio($request);
-        $fechaFin = $this->getFechaFin($request);
-        $filtro = $request->get('filtro', 'dia');
-        
-        // Obtener datos de HOTEL
-        $datosHotel = $this->getDatosHotel($fechaInicio, $fechaFin);
-        
-        // Obtener datos de BODEGA
-        $datosBodega = $this->getDatosBodega($fechaInicio, $fechaFin);
-        
-        // Formatear fechas para mostrar
-        $subtituloFecha = $this->getSubtituloFecha($fechaInicio, $fechaFin, $filtro);
-
-        $datosDiariosHotel = null;
-        $datosDiariosBodega = null;
-        if ($filtro === 'semana' || $filtro === 'personalizado') {
-            $datosDiariosHotel = $this->getDatosDiariosHotel($fechaInicio, $fechaFin);
-            $datosDiariosBodega = $this->getDatosDiariosBodega($fechaInicio, $fechaFin);
+        // Obtener fechas seleccionadas (múltiples días)
+        $fechasSeleccionadas = $request->get('fechas', [today()->format('Y-m-d')]);
+        if (!is_array($fechasSeleccionadas)) {
+            $fechasSeleccionadas = [$fechasSeleccionadas];
         }
         
-        return view('cuadre-caja.index', compact('datosHotel', 'datosBodega', 'subtituloFecha', 'filtro', 'fechaInicio', 'fechaFin', 'datosDiariosHotel', 'datosDiariosBodega'));    
+        // Obtener datos por días con estructura de matriz
+        $datosPorDias = $this->getDatosPorDias($fechasSeleccionadas);
+        
+        // Calcular resumen final
+        $resumenFinal = $this->calcularResumenFinalMatriz($datosPorDias);
+        
+        return view('cuadre-caja.index', compact('datosPorDias', 'fechasSeleccionadas', 'resumenFinal'));    
     }
     
-    // Obtener datos de HOTEL (ingresos por habitaciones y gastos)
-    private function getDatosHotel($fechaInicio, $fechaFin)
+    // Obtener datos por días con estructura de matriz
+    private function getDatosPorDias($fechasSeleccionadas)
     {
-        // INGRESOS: Pagos por habitaciones
-        $ingresos = DB::table('fact_pago_hab as fph')
+        $datosPorDias = [];
+        
+        foreach ($fechasSeleccionadas as $fecha) {
+            $datosPorDias[$fecha] = [
+                'fecha' => Carbon::parse($fecha),
+                'hotel' => [
+                    'dia' => ['efectivo' => 0, 'yape_plin' => 0, 'tarjeta' => 0],
+                    'noche' => ['efectivo' => 0, 'yape_plin' => 0, 'tarjeta' => 0]
+                ],
+                'bodega' => [
+                    'dia' => ['efectivo' => 0, 'yape_plin' => 0, 'tarjeta' => 0],
+                    'noche' => ['efectivo' => 0, 'yape_plin' => 0, 'tarjeta' => 0]
+                ],
+                'gastos' => [
+                    'dia' => ['efectivo' => 0, 'yape_plin' => 0, 'tarjeta' => 0],
+                    'noche' => ['efectivo' => 0, 'yape_plin' => 0, 'tarjeta' => 0]
+                ]
+            ];
+        }
+
+        // Llenar ingresos de HOTEL por turno y método
+        $ingresosHotel = DB::table('fact_pago_hab as fph')
             ->join('fact_registro_clientes as frc', 'frc.id_estadia', '=', 'fph.id_estadia')
             ->join('dim_met_pago as dmp', 'dmp.id_met_pago', '=', 'fph.id_met_pago')
-            ->whereBetween('frc.fecha_ingreso', [$fechaInicio, $fechaFin])
-            ->select('dmp.met_pago', DB::raw('SUM(fph.monto) as total'))
-            ->groupBy('dmp.id_met_pago', 'dmp.met_pago')
+            ->whereIn('frc.fecha_ingreso', $fechasSeleccionadas)
+            ->select(
+                'frc.fecha_ingreso',
+                'frc.turno',
+                'dmp.met_pago', 
+                DB::raw('SUM(fph.monto) as total')
+            )
+            ->groupBy('frc.fecha_ingreso', 'frc.turno', 'dmp.id_met_pago', 'dmp.met_pago')
             ->get();
+
+        foreach ($ingresosHotel as $ingreso) {
+            $fecha = $ingreso->fecha_ingreso;
+            $turno = $ingreso->turno == 0 ? 'dia' : 'noche';
+            $metodo = $this->clasificarMetodoDetallado($ingreso->met_pago);
             
-        // GASTOS: Solo gastos generales (fact_compra_interna no tiene método de pago)
+            if (isset($datosPorDias[$fecha])) {
+                $datosPorDias[$fecha]['hotel'][$turno][$metodo] += $ingreso->total;
+            }
+        }
+
+        // Llenar ingresos de BODEGA (usando fecha de ingreso del huésped)
+        $ingresosBodega = DB::table('fact_pago_prod as fpp')
+            ->join('fact_registro_clientes as frc', 'frc.id_estadia', '=', 'fpp.id_estadia')
+            ->join('dim_met_pago as dmp', 'dmp.id_met_pago', '=', 'fpp.id_met_pago')
+            ->whereIn('frc.fecha_ingreso', $fechasSeleccionadas)
+            ->select(
+                'frc.fecha_ingreso',
+                'frc.turno',
+                'dmp.met_pago', 
+                DB::raw('SUM(fpp.cantidad * fpp.precio_unitario) as total')
+            )
+            ->groupBy('frc.fecha_ingreso', 'frc.turno', 'dmp.id_met_pago', 'dmp.met_pago')
+            ->get();
+
+        foreach ($ingresosBodega as $ingreso) {
+            $fecha = $ingreso->fecha_ingreso;
+            $turno = $ingreso->turno == 0 ? 'dia' : 'noche';
+            $metodo = $this->clasificarMetodoDetallado($ingreso->met_pago);
+            
+            if (isset($datosPorDias[$fecha])) {
+                $datosPorDias[$fecha]['bodega'][$turno][$metodo] += $ingreso->total;
+            }
+        }
+
+        // Llenar GASTOS (distribuir proporcionalmente entre días y turnos)
         $gastosGenerales = DB::table('fact_gastos_generales as fgg')
             ->join('dim_met_pago as dmp', 'dmp.id_met_pago', '=', 'fgg.id_met_pago')
             ->join('dim_tipo_gasto as dtg', 'dtg.id_tipo_gasto', '=', 'fgg.id_tipo_gasto')
-            ->where('dtg.nombre', '!=', 'COMPRAS BODEGA')
-            ->whereBetween('fgg.fecha_gasto', [$fechaInicio, $fechaFin])
-            ->select('dmp.met_pago', DB::raw('SUM(fgg.monto) as total'))
-            ->groupBy('dmp.id_met_pago', 'dmp.met_pago')
+            ->whereIn('fgg.fecha_gasto', $fechasSeleccionadas)
+            ->select('fgg.fecha_gasto', 'dmp.met_pago', 'dtg.nombre as tipo_gasto', DB::raw('SUM(fgg.monto) as total'))
+            ->groupBy('fgg.fecha_gasto', 'dmp.id_met_pago', 'dmp.met_pago', 'dtg.id_tipo_gasto', 'dtg.nombre')
             ->get();
-        
-        $gastos = $gastosGenerales;
-        
-        // Gastos fijos (sin método de pago, se asumen como Efectivo)
+
+        // Gastos fijos
         $gastosFijos = collect();
         if (Schema::hasTable('fact_pagos_gastos_fijos')) {
-        $gastosFijos = DB::table('fact_pagos_gastos_fijos as fpgf')
-            ->join('dim_met_pago as dmp', 'dmp.id_met_pago', '=', 'fpgf.id_met_pago')
-            ->whereBetween('fpgf.fecha_pago', [$fechaInicio, $fechaFin])
-            ->select('dmp.met_pago', DB::raw('SUM(fpgf.monto_pagado) as total'))
-            ->groupBy('dmp.id_met_pago', 'dmp.met_pago')
-            ->get();
-        }
-
-        // Combinar todos los gastos (generales + compras + fijos)
-        $gastos = $this->combinarGastos($gastosGenerales, $gastosFijos);
-
-        return $this->organizarDatosPorMetodoPago($ingresos, $gastos);
-    }
-    
-    // Obtener datos de BODEGA (ingresos por consumos y gastos por compras)
-    private function getDatosBodega($fechaInicio, $fechaFin)
-    {
-        // INGRESOS: Consumos de productos (ventas a huéspedes)
-        $ingresos = DB::table('fact_pago_prod as fpp')
-            ->join('fact_registro_clientes as frc', 'frc.id_estadia', '=', 'fpp.id_estadia')
-            ->join('dim_met_pago as dmp', 'dmp.id_met_pago', '=', 'fpp.id_met_pago')
-            ->whereBetween('frc.fecha_ingreso', [$fechaInicio, $fechaFin])
-            ->select('dmp.met_pago', DB::raw('SUM(fpp.cantidad * fpp.precio_unitario) as total'))
-            ->groupBy('dmp.id_met_pago', 'dmp.met_pago')
-            ->get();
-
-        // GASTOS: Solo categoría "COMPRAS BODEGA" de gastos variables
-        $gastos = collect(); // Inicializar vacío
-
-        // Verificar si existe la categoría "COMPRAS BODEGA"
-        $categoriaBodega = DB::table('dim_tipo_gasto')
-            ->where('nombre', 'COMPRAS BODEGA')
-            ->first();
-
-        if ($categoriaBodega) {
-            // Si existe la categoría, obtener los gastos
-            $gastos = DB::table('fact_gastos_generales as fgg')
-                ->join('dim_met_pago as dmp', 'dmp.id_met_pago', '=', 'fgg.id_met_pago')
-                ->where('fgg.id_tipo_gasto', $categoriaBodega->id_tipo_gasto)
-                ->whereBetween('fgg.fecha_gasto', [$fechaInicio, $fechaFin])
-                ->select('dmp.met_pago', DB::raw('SUM(fgg.monto) as total'))
-                ->groupBy('dmp.id_met_pago', 'dmp.met_pago')
+            $gastosFijos = DB::table('fact_pagos_gastos_fijos as fpgf')
+                ->join('dim_met_pago as dmp', 'dmp.id_met_pago', '=', 'fpgf.id_met_pago')
+                ->whereIn('fpgf.fecha_pago', $fechasSeleccionadas)
+                ->select('fpgf.fecha_pago as fecha_gasto', 'dmp.met_pago', DB::raw('"GASTOS FIJOS" as tipo_gasto'), 'fpgf.monto_pagado as total')
                 ->get();
         }
 
-        return $this->organizarDatosPorMetodoPago($ingresos, $gastos);
+        // Procesar gastos (dividir entre DÍA y NOCHE)
+        foreach ($gastosGenerales->concat($gastosFijos) as $gasto) {
+            $fecha = $gasto->fecha_gasto;
+            $metodo = $this->clasificarMetodoDetallado($gasto->met_pago);
+            
+            if (isset($datosPorDias[$fecha])) {
+                // Dividir gastos entre día y noche (50% cada uno)
+                $montoDia = $gasto->total / 2;
+                $montoNoche = $gasto->total / 2;
+                
+                $datosPorDias[$fecha]['gastos']['dia'][$metodo] += $montoDia;
+                $datosPorDias[$fecha]['gastos']['noche'][$metodo] += $montoNoche;
+            }
+        }
 
-        
+        return $datosPorDias;
     }
-    
-    // Obtener datos diarios de HOTEL para la semana
+
+    // Clasificar método de pago detallado
+    private function clasificarMetodoDetallado($metodo)
+    {
+        switch (strtolower($metodo)) {
+            case 'efectivo':
+                return 'efectivo';
+            case 'yape':
+            case 'plin':
+                return 'yape_plin';
+            default:
+                return 'tarjeta';
+        }
+    }
+
+    // Calcular resumen final matriz
+    private function calcularResumenFinalMatriz($datosPorDias)
+    {
+        $resumen = [
+            'hotel' => ['efectivo' => 0, 'cuenta' => 0],
+            'bodega' => ['efectivo' => 0, 'cuenta' => 0],
+            'totales' => ['efectivo' => 0, 'cuenta' => 0, 'total' => 0]
+        ];
+
+        foreach ($datosPorDias as $datos) {
+            foreach (['dia', 'noche'] as $turno) {
+                // HOTEL
+                $hotelEfectivo = $datos['hotel'][$turno]['efectivo'];
+                $hotelCuenta = $datos['hotel'][$turno]['yape_plin'] + $datos['hotel'][$turno]['tarjeta'];
+                
+                $resumen['hotel']['efectivo'] += $hotelEfectivo;
+                $resumen['hotel']['cuenta'] += $hotelCuenta;
+
+                // BODEGA  
+                $bodegaEfectivo = $datos['bodega'][$turno]['efectivo'];
+                $bodegaCuenta = $datos['bodega'][$turno]['yape_plin'] + $datos['bodega'][$turno]['tarjeta'];
+                
+                $resumen['bodega']['efectivo'] += $bodegaEfectivo;
+                $resumen['bodega']['cuenta'] += $bodegaCuenta;
+
+                // DESCONTAR GASTOS (distribuidos entre hotel y bodega)
+                $gastosEfectivo = $datos['gastos'][$turno]['efectivo'] / 2;
+                $gastosCuenta = ($datos['gastos'][$turno]['yape_plin'] + $datos['gastos'][$turno]['tarjeta']) / 2;
+                
+                $resumen['hotel']['efectivo'] -= $gastosEfectivo;
+                $resumen['hotel']['cuenta'] -= $gastosCuenta;
+                $resumen['bodega']['efectivo'] -= $gastosEfectivo;
+                $resumen['bodega']['cuenta'] -= $gastosCuenta;
+            }
+        }
+
+        // Calcular totales
+        $resumen['totales']['efectivo'] = $resumen['hotel']['efectivo'] + $resumen['bodega']['efectivo'];
+        $resumen['totales']['cuenta'] = $resumen['hotel']['cuenta'] + $resumen['bodega']['cuenta'];
+        $resumen['totales']['total'] = $resumen['totales']['efectivo'] + $resumen['totales']['cuenta'];
+
+        return $resumen;
+    }
+
+    // Métodos auxiliares existentes (mantener sin cambios)
     private function getDatosDiariosHotel($fechaInicio, $fechaFin)
     {
         // Ingresos diarios
@@ -138,13 +218,12 @@ class CuadreCajaController extends Controller
         $gastosFijosDiarios = DB::table('fact_pagos_gastos_fijos as fpgf')
             ->join('dim_met_pago as dmp', 'dmp.id_met_pago', '=', 'fpgf.id_met_pago')
             ->whereBetween('fpgf.fecha_pago', [$fechaInicio, $fechaFin])
-            ->select('fpgf.fecha_pago as fecha', 'dmp.met_pago', 'fpgf.monto_pagado as total') // ← Método real
+            ->select('fpgf.fecha_pago as fecha', 'dmp.met_pago', 'fpgf.monto_pagado as total')
             ->get();
 
         return $this->organizarDatosDiarios($ingresos, $gastosGenerales->concat($gastosFijosDiarios), $fechaInicio, $fechaFin);
     }
 
-    // Obtener datos diarios de BODEGA para la semana
     private function getDatosDiariosBodega($fechaInicio, $fechaFin)
     {
         // Ingresos diarios
@@ -246,77 +325,6 @@ class CuadreCajaController extends Controller
         }
         
         return $gastosCombinados;
-    }
-    
-    // Organizar datos por método de pago con estructura uniforme
-    private function organizarDatosPorMetodoPago($ingresos, $gastos)
-    {
-        $metodosPago = ['Efectivo', 'Yape', 'Plin', 'Tarjeta', 'Tarjeta crédito', 'QR', 'Transferencia'];
-        $datos = [];
-        
-        // Convertir ingresos y gastos a arrays asociativos por método de pago
-        $ingresosArray = $ingresos->keyBy('met_pago')->toArray();
-        $gastosArray = $gastos->keyBy('met_pago')->toArray();
-        
-        foreach ($metodosPago as $metodo) {
-            // Agrupar Yape y Plin juntos
-            if ($metodo === 'Yape') {
-                $ingresoYape = isset($ingresosArray['Yape']) ? $ingresosArray['Yape']->total : 0;
-                $ingresoPlin = isset($ingresosArray['Plin']) ? $ingresosArray['Plin']->total : 0;
-                $gastoYape = isset($gastosArray['Yape']) ? $gastosArray['Yape']->total : 0;
-                $gastoPlin = isset($gastosArray['Plin']) ? $gastosArray['Plin']->total : 0;
-                
-                $datos['Yape/Plin'] = [
-                    'ingreso' => $ingresoYape + $ingresoPlin,
-                    'gasto' => $gastoYape + $gastoPlin,
-                    'total' => ($ingresoYape + $ingresoPlin) - ($gastoYape + $gastoPlin)
-                ];
-                continue;
-            }
-            
-            // Saltar Plin porque ya se procesó con Yape
-            if ($metodo === 'Plin') {
-                continue;
-            }
-            
-            // Tarjeta, Tarjeta crédito, QR y Transferencia se agrupan como "Cuenta Bancaria"
-            if ($metodo === 'Tarjeta') {
-                $ingresoTarjeta = isset($ingresosArray['Tarjeta']) ? $ingresosArray['Tarjeta']->total : 0;
-                $ingresoTarjetaCredito = isset($ingresosArray['Tarjeta crédito']) ? $ingresosArray['Tarjeta crédito']->total : 0;
-                $ingresoQR = isset($ingresosArray['QR']) ? $ingresosArray['QR']->total : 0;
-                $ingresoTransferencia = isset($ingresosArray['Transferencia']) ? $ingresosArray['Transferencia']->total : 0;
-                
-                $gastoTarjeta = isset($gastosArray['Tarjeta']) ? $gastosArray['Tarjeta']->total : 0;
-                $gastoTarjetaCredito = isset($gastosArray['Tarjeta crédito']) ? $gastosArray['Tarjeta crédito']->total : 0;
-                $gastoQR = isset($gastosArray['QR']) ? $gastosArray['QR']->total : 0;
-                $gastoTransferencia = isset($gastosArray['Transferencia']) ? $gastosArray['Transferencia']->total : 0;
-                
-                $datos['Cuenta Bancaria'] = [
-                    'ingreso' => $ingresoTarjeta + $ingresoTarjetaCredito + $ingresoQR + $ingresoTransferencia,
-                    'gasto' => $gastoTarjeta + $gastoTarjetaCredito + $gastoQR + $gastoTransferencia,
-                    'total' => ($ingresoTarjeta + $ingresoTarjetaCredito + $ingresoQR + $ingresoTransferencia) - 
-                            ($gastoTarjeta + $gastoTarjetaCredito + $gastoQR + $gastoTransferencia)
-                ];
-                continue;
-            }
-            
-            // Saltar estos porque ya se procesaron con Tarjeta
-            if (in_array($metodo, ['Plin', 'Tarjeta crédito', 'QR', 'Transferencia'])) {
-                continue;
-            }
-            
-            // Efectivo
-            $ingreso = isset($ingresosArray[$metodo]) ? $ingresosArray[$metodo]->total : 0;
-            $gasto = isset($gastosArray[$metodo]) ? $gastosArray[$metodo]->total : 0;
-            
-            $datos[$metodo] = [
-                'ingreso' => $ingreso,
-                'gasto' => $gasto,
-                'total' => $ingreso - $gasto
-            ];
-        }
-        
-        return $datos;
     }
     
     // Obtener fecha de inicio según el filtro

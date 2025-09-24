@@ -26,6 +26,7 @@ class FactTrabajadorController extends Controller
             'sueldo'          => 'required|numeric|min:0|max:9999.99',
             'Fecha_inicio'    => 'required|date',
             'Telef'           => 'required|string|max:9',
+            'fecha_cumple'    => 'nullable|date',
         ]);
 
         // estilo “plan B” sin mass assignment si prefieres
@@ -35,6 +36,7 @@ class FactTrabajadorController extends Controller
         $t->sueldo          = $validated['sueldo'];
         $t->Fecha_inicio    = $validated['Fecha_inicio'];
         $t->Telef           = $validated['Telef'];
+        $t->fecha_cumple = $validated['fecha_cumple'] ?? null;; 
         $t->save();
 
         return redirect()->route('trabajadores.index')->with('success', 'Trabajador creado correctamente.');
@@ -55,6 +57,7 @@ class FactTrabajadorController extends Controller
             'sueldo'          => 'required|numeric|min:0|max:9999.99',
             'Fecha_inicio'    => 'required|date',
             'Telef'           => 'required|string|max:9',
+            'fecha_cumple' => 'nullable|date',
         ]);
 
         // “plan B” para evitar mass assignment
@@ -62,6 +65,7 @@ class FactTrabajadorController extends Controller
         $trabajador->sueldo          = $validated['sueldo'];
         $trabajador->Fecha_inicio    = $validated['Fecha_inicio'];
         $trabajador->Telef           = $validated['Telef'];
+        $trabajador->fecha_cumple = $validated['fecha_cumple'] ?? null;;
         $trabajador->save();
 
         return redirect()->route('trabajadores.index')->with('success', 'Trabajador actualizado correctamente.');

@@ -12,7 +12,13 @@ class FactTrabajador extends Model
     protected $keyType = 'string';
     public $timestamps = false;
 
-    protected $fillable = ['DNI', 'nombre_apellido', 'sueldo', 'Fecha_inicio', 'Telef'];
+    protected $fillable = [
+        'DNI', 
+        'nombre_apellido', 
+        'sueldo', 
+        'Fecha_inicio', 
+        'Telef', 
+        'fecha_cumple'];
 
     // Relación con horarios
     public function horarios()

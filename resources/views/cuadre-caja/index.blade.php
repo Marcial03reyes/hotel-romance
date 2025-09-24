@@ -5,448 +5,301 @@
 @section('content')
 
 <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <!-- Filtros de período -->
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6 mb-6">
-                <form method="GET" action="{{ route('cuadre-caja.index') }}" id="filtroForm">
-                    <div class="flex flex-wrap items-center gap-4 mb-4">
-                        <div class="flex gap-2">
-                            <button type="submit" name="filtro" value="dia"
-                                class="px-4 py-2 rounded-lg font-medium transition-colors duration-200 {{ $filtro === 'dia' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-                                DÍA
-                            </button>
-                            <button type="submit" name="filtro" value="semana"
-                                class="px-4 py-2 rounded-lg font-medium transition-colors duration-200 {{ $filtro === 'semana' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-                                SEMANA
-                            </button>
-                            <button type="button" id="personalizadoBtn"
-                                class="px-4 py-2 rounded-lg font-medium transition-colors duration-200 {{ $filtro === 'personalizado' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-                                PERSONALIZADO
-                            </button>
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <!-- Selector de fechas múltiples -->
+        <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6 mb-6">
+            <form method="GET" action="{{ route('cuadre-caja.index') }}" id="fechasForm">
+                <div class="flex flex-wrap items-center gap-4 mb-4">
+                    <div class="flex-1">
+                        <label for="fechas" class="block text-sm font-medium text-gray-700 mb-2">
+                            Seleccionar Fechas (múltiples días)
+                        </label>
+                        <div class="relative">
+                            <input type="text" id="fechasInput" 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Haga clic para seleccionar fechas..." readonly>
+                            <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                <i class='bx bx-calendar text-gray-400'></i>
+                            </div>
+                        </div>
+                        <!-- Campos ocultos para enviar fechas seleccionadas -->
+                        <div id="fechasHiddenInputs">
+                            @foreach($fechasSeleccionadas as $fecha)
+                                <input type="hidden" name="fechas[]" value="{{ $fecha }}">
+                            @endforeach
                         </div>
                     </div>
-                    
-                    <!-- Campos de fecha personalizada (ocultos por defecto) -->
-                    <div id="fechasPersonalizadas" class="flex gap-4 items-center {{ $filtro !== 'personalizado' ? 'hidden' : '' }}">
-                        <div>
-                            <label for="fecha_inicio" class="block text-sm font-medium text-gray-700 mb-1">Fecha Inicio</label>
-                            <input type="date" id="fecha_inicio" name="fecha_inicio" 
-                                value="{{ $fechaInicio }}"
-                                class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label for="fecha_fin" class="block text-sm font-medium text-gray-700 mb-1">Fecha Fin</label>
-                            <input type="date" id="fecha_fin" name="fecha_fin" 
-                                value="{{ $fechaFin }}"
-                                class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div class="pt-6">
-                            <button type="submit" name="filtro" value="personalizado"
-                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
-                                Consultar
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Subtítulo con período -->
-            <div class="text-center mb-8">
-                <h3 class="text-lg font-semibold text-gray-700">{{ $subtituloFecha }}</h3>
-            </div>
-
-            <!-- Tablas Diarias (solo para semana y personalizado) -->
-            @if(($filtro === 'semana' || $filtro === 'personalizado') && isset($datosDiariosHotel))
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                    <!-- HOTEL - TABLAS DIARIAS -->
-                    <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                        <div class="p-6">
-                            <h3 class="text-xl font-bold text-center mb-4 text-blue-600">HOTEL - DETALLE DIARIO</h3>
-                            
-                            <!-- Tabla de INGRESOS -->
-                            <h4 class="text-lg font-semibold mb-3 text-blue-500">INGRESOS</h4>
-                            <div class="overflow-x-auto mb-6">
-                                <table class="w-full border-collapse border border-gray-300">
-                                    <thead>
-                                        <tr class="bg-blue-50">
-                                            <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Día</th>
-                                            <th class="border border-gray-300 px-3 py-2 text-center font-semibold">Efectivo</th>
-                                            <th class="border border-gray-300 px-3 py-2 text-center font-semibold">Yape/Plin</th>
-                                            <th class="border border-gray-300 px-3 py-2 text-center font-semibold">Cta. Bancaria</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($datosDiariosHotel as $fecha => $datos)
-                                        <tr>
-                                            <td class="border border-gray-300 px-3 py-2 font-medium">
-                                                {{ ucfirst($datos['fecha']->locale('es')->dayName) }} {{ $datos['fecha']->day }}
-                                            </td>
-                                            <td class="border border-gray-300 px-3 py-2 text-center">
-                                                S/{{ number_format($datos['ingresos']['Efectivo'], 2) }}
-                                            </td>
-                                            <td class="border border-gray-300 px-3 py-2 text-center">
-                                                S/{{ number_format($datos['ingresos']['Yape/Plin'], 2) }}
-                                            </td>
-                                            <td class="border border-gray-300 px-3 py-2 text-center">
-                                                S/{{ number_format($datos['ingresos']['Cuenta Bancaria'], 2) }}
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Tabla de GASTOS -->
-                            <h4 class="text-lg font-semibold mb-3 text-red-500">GASTOS</h4>
-                            <div class="overflow-x-auto">
-                                <table class="w-full border-collapse border border-gray-300">
-                                    <thead>
-                                        <tr class="bg-red-50">
-                                            <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Día</th>
-                                            <th class="border border-gray-300 px-3 py-2 text-center font-semibold">Efectivo</th>
-                                            <th class="border border-gray-300 px-3 py-2 text-center font-semibold">Yape/Plin</th>
-                                            <th class="border border-gray-300 px-3 py-2 text-center font-semibold">Cta. Bancaria</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($datosDiariosHotel as $fecha => $datos)
-                                        <tr>
-                                            <td class="border border-gray-300 px-3 py-2 font-medium">
-                                                {{ ucfirst($datos['fecha']->locale('es')->dayName) }} {{ $datos['fecha']->day }}
-                                            </td>
-                                            <td class="border border-gray-300 px-3 py-2 text-center">
-                                                S/{{ number_format($datos['gastos']['Efectivo'], 2) }}
-                                            </td>
-                                            <td class="border border-gray-300 px-3 py-2 text-center">
-                                                S/{{ number_format($datos['gastos']['Yape/Plin'], 2) }}
-                                            </td>
-                                            <td class="border border-gray-300 px-3 py-2 text-center">
-                                                S/{{ number_format($datos['gastos']['Cuenta Bancaria'], 2) }}
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- BODEGA - TABLAS DIARIAS -->
-                    <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                        <div class="p-6">
-                            <h3 class="text-xl font-bold text-center mb-4 text-green-600">BODEGA - DETALLE DIARIO</h3>
-                            
-                            <!-- Tabla de INGRESOS -->
-                            <h4 class="text-lg font-semibold mb-3 text-green-500">INGRESOS</h4>
-                            <div class="overflow-x-auto mb-6">
-                                <table class="w-full border-collapse border border-gray-300">
-                                    <thead>
-                                        <tr class="bg-green-50">
-                                            <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Día</th>
-                                            <th class="border border-gray-300 px-3 py-2 text-center font-semibold">Efectivo</th>
-                                            <th class="border border-gray-300 px-3 py-2 text-center font-semibold">Yape/Plin</th>
-                                            <th class="border border-gray-300 px-3 py-2 text-center font-semibold">Cta. Bancaria</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($datosDiariosBodega as $fecha => $datos)
-                                        <tr>
-                                            <td class="border border-gray-300 px-3 py-2 font-medium">
-                                                {{ ucfirst($datos['fecha']->locale('es')->dayName) }} {{ $datos['fecha']->day }}
-                                            </td>
-                                            <td class="border border-gray-300 px-3 py-2 text-center">
-                                                S/{{ number_format($datos['ingresos']['Efectivo'], 2) }}
-                                            </td>
-                                            <td class="border border-gray-300 px-3 py-2 text-center">
-                                                S/{{ number_format($datos['ingresos']['Yape/Plin'], 2) }}
-                                            </td>
-                                            <td class="border border-gray-300 px-3 py-2 text-center">
-                                                S/{{ number_format($datos['ingresos']['Cuenta Bancaria'], 2) }}
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Tabla de GASTOS -->
-                            <h4 class="text-lg font-semibold mb-3 text-red-500">GASTOS</h4>
-                            <div class="overflow-x-auto">
-                                <table class="w-full border-collapse border border-gray-300">
-                                    <thead>
-                                        <tr class="bg-red-50">
-                                            <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Día</th>
-                                            <th class="border border-gray-300 px-3 py-2 text-center font-semibold">Efectivo</th>
-                                            <th class="border border-gray-300 px-3 py-2 text-center font-semibold">Yape/Plin</th>
-                                            <th class="border border-gray-300 px-3 py-2 text-center font-semibold">Cta. Bancaria</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($datosDiariosBodega as $fecha => $datos)
-                                        <tr>
-                                            <td class="border border-gray-300 px-3 py-2 font-medium">
-                                                {{ ucfirst($datos['fecha']->locale('es')->dayName) }} {{ $datos['fecha']->day }}
-                                            </td>
-                                            <td class="border border-gray-300 px-3 py-2 text-center">
-                                                S/{{ number_format($datos['gastos']['Efectivo'], 2) }}
-                                            </td>
-                                            <td class="border border-gray-300 px-3 py-2 text-center">
-                                                S/{{ number_format($datos['gastos']['Yape/Plin'], 2) }}
-                                            </td>
-                                            <td class="border border-gray-300 px-3 py-2 text-center">
-                                                S/{{ number_format($datos['gastos']['Cuenta Bancaria'], 2) }}
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                    <div class="pt-6">
+                        <button type="submit" 
+                            class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium">
+                            <i class='bx bx-search mr-2'></i>
+                            Consultar
+                        </button>
                     </div>
                 </div>
-            @endif
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- HOTEL -->
-                <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                    <div class="p-6">
-                        <h3 class="text-xl font-bold text-center mb-6 text-blue-600">HOTEL</h3>
-                        <div class="overflow-x-auto">
-                            <table class="w-full border-collapse border border-gray-300">
-                                <thead>
-                                    <tr class="bg-gray-50">
-                                        <th class="border border-gray-300 px-4 py-3 text-left font-semibold">Método</th>
-                                        <th class="border border-gray-300 px-4 py-3 text-center font-semibold">Ingresos</th>
-                                        <th class="border border-gray-300 px-4 py-3 text-center font-semibold">Gastos</th>
-                                        <th class="border border-gray-300 px-4 py-3 text-center font-semibold bg-gray-200">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td class="border border-gray-300 px-4 py-3 font-medium">Efectivo</td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center">
-                                            S/{{ number_format($datosHotel['Efectivo']['ingreso'] ?? 0, 2) }}
-                                        </td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center">
-                                            S/{{ number_format($datosHotel['Efectivo']['gasto'] ?? 0, 2) }}
-                                        </td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center bg-gray-100 font-semibold {{ ($datosHotel['Efectivo']['total'] ?? 0) >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                                            S/{{ number_format($datosHotel['Efectivo']['total'] ?? 0, 2) }}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="border border-gray-300 px-4 py-3 font-medium">Yape/Plin</td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center">
-                                            S/{{ number_format($datosHotel['Yape/Plin']['ingreso'] ?? 0, 2) }}
-                                        </td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center">
-                                            S/{{ number_format($datosHotel['Yape/Plin']['gasto'] ?? 0, 2) }}
-                                        </td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center bg-gray-100 font-semibold {{ ($datosHotel['Yape/Plin']['total'] ?? 0) >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                                            S/{{ number_format($datosHotel['Yape/Plin']['total'] ?? 0, 2) }}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="border border-gray-300 px-4 py-3 font-medium">Cuenta Bancaria</td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center">
-                                            S/{{ number_format($datosHotel['Cuenta Bancaria']['ingreso'] ?? 0, 2) }}
-                                        </td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center">
-                                            S/{{ number_format($datosHotel['Cuenta Bancaria']['gasto'] ?? 0, 2) }}
-                                        </td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center bg-gray-100 font-semibold {{ ($datosHotel['Cuenta Bancaria']['total'] ?? 0) >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                                            S/{{ number_format($datosHotel['Cuenta Bancaria']['total'] ?? 0, 2) }}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                                <tfoot>
-                                    <tr class="bg-blue-50 font-bold">
-                                        <td class="border border-gray-300 px-4 py-3">TOTAL HOTEL</td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center">
-                                            @php
-                                                $totalIngresosHotel = collect($datosHotel)->sum('ingreso');
-                                            @endphp
-                                            S/{{ number_format($totalIngresosHotel, 2) }}
-                                        </td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center">
-                                            @php
-                                                $totalGastosHotel = collect($datosHotel)->sum('gasto');
-                                            @endphp
-                                            S/{{ number_format($totalGastosHotel, 2) }}
-                                        </td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center bg-gray-200 {{ ($totalIngresosHotel - $totalGastosHotel) >= 0 ? 'text-green-700' : 'text-red-700' }}">
-                                            S/{{ number_format($totalIngresosHotel - $totalGastosHotel, 2) }}
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                
+                <!-- Fechas seleccionadas -->
+                @if(count($fechasSeleccionadas) > 0)
+                    <div class="mt-4">
+                        <span class="text-sm font-medium text-gray-700">Fechas seleccionadas:</span>
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            @foreach($fechasSeleccionadas as $fecha)
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {{ \Carbon\Carbon::parse($fecha)->format('d/m/Y') }}
+                                </span>
+                            @endforeach
                         </div>
                     </div>
-                </div>
+                @endif
+            </form>
+        </div>
 
-                <!-- BODEGA -->
-                <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-                    <div class="p-6">
-                        <h3 class="text-xl font-bold text-center mb-6 text-green-600">BODEGA</h3>
-                        <div class="overflow-x-auto">
-                            <table class="w-full border-collapse border border-gray-300">
-                                <thead>
-                                    <tr class="bg-gray-50">
-                                        <th class="border border-gray-300 px-4 py-3 text-left font-semibold">Método</th>
-                                        <th class="border border-gray-300 px-4 py-3 text-center font-semibold">Ingresos</th>
-                                        <th class="border border-gray-300 px-4 py-3 text-center font-semibold">Gastos</th>
-                                        <th class="border border-gray-300 px-4 py-3 text-center font-semibold bg-gray-200">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td class="border border-gray-300 px-4 py-3 font-medium">Efectivo</td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center">
-                                            S/{{ number_format($datosBodega['Efectivo']['ingreso'] ?? 0, 2) }}
-                                        </td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center">
-                                            S/{{ number_format($datosBodega['Efectivo']['gasto'] ?? 0, 2) }}
-                                        </td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center bg-gray-100 font-semibold {{ ($datosBodega['Efectivo']['total'] ?? 0) >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                                            S/{{ number_format($datosBodega['Efectivo']['total'] ?? 0, 2) }}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="border border-gray-300 px-4 py-3 font-medium">Yape/Plin</td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center">
-                                            S/{{ number_format($datosBodega['Yape/Plin']['ingreso'] ?? 0, 2) }}
-                                        </td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center">
-                                            S/{{ number_format($datosBodega['Yape/Plin']['gasto'] ?? 0, 2) }}
-                                        </td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center bg-gray-100 font-semibold {{ ($datosBodega['Yape/Plin']['total'] ?? 0) >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                                            S/{{ number_format($datosBodega['Yape/Plin']['total'] ?? 0, 2) }}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="border border-gray-300 px-4 py-3 font-medium">Cuenta Bancaria</td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center">
-                                            S/{{ number_format($datosBodega['Cuenta Bancaria']['ingreso'] ?? 0, 2) }}
-                                        </td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center">
-                                            S/{{ number_format($datosBodega['Cuenta Bancaria']['gasto'] ?? 0, 2) }}
-                                        </td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center bg-gray-100 font-semibold {{ ($datosBodega['Cuenta Bancaria']['total'] ?? 0) >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                                            S/{{ number_format($datosBodega['Cuenta Bancaria']['total'] ?? 0, 2) }}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                                <tfoot>
-                                    <tr class="bg-green-50 font-bold">
-                                        <td class="border border-gray-300 px-4 py-3">TOTAL BODEGA</td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center">
-                                            @php
-                                                $totalIngresosBodega = collect($datosBodega)->sum('ingreso');
-                                            @endphp
-                                            S/{{ number_format($totalIngresosBodega, 2) }}
-                                        </td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center">
-                                            @php
-                                                $totalGastosBodega = collect($datosBodega)->sum('gasto');
-                                            @endphp
-                                            S/{{ number_format($totalGastosBodega, 2) }}
-                                        </td>
-                                        <td class="border border-gray-300 px-4 py-3 text-center bg-gray-200 {{ ($totalIngresosBodega - $totalGastosBodega) >= 0 ? 'text-green-700' : 'text-red-700' }}">
-                                            S/{{ number_format($totalIngresosBodega - $totalGastosBodega, 2) }}
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </div>
+        <!-- Matriz de datos por días -->
+        <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
+            <div class="p-6">
+                <h3 class="text-xl font-bold text-center mb-6 text-gray-800">CUADRE DE CAJA POR DÍAS</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <!-- Fecha -->
+                                <th rowspan="2" class="border border-gray-300 px-3 py-3 text-center font-bold bg-gray-50">FECHA</th>
+                                <!-- Método -->
+                                <th rowspan="2" class="border border-gray-300 px-3 py-3 text-center font-bold bg-gray-50">MÉTODO</th>
+                                <!-- Hotel -->
+                                <th colspan="2" class="border border-gray-300 px-3 py-2 text-center font-bold bg-blue-100">HOTEL</th>
+                                <!-- Bodega -->
+                                <th colspan="2" class="border border-gray-300 px-3 py-2 text-center font-bold bg-green-100">BODEGA</th>
+                                <!-- Gasto -->
+                                <th colspan="2" class="border border-gray-300 px-3 py-2 text-center font-bold bg-red-100">GASTO</th>
+                                <!-- Columnas auxiliares -->
+                                <th rowspan="2" class="border border-gray-300 px-3 py-3 text-center font-bold bg-yellow-100">DÍA<br>(Efectivo)</th>
+                                <th rowspan="2" class="border border-gray-300 px-3 py-3 text-center font-bold bg-yellow-100">NOCHE<br>(Efectivo)</th>
+                            </tr>
+                            <tr class="bg-gray-50">
+                                <!-- Hotel turnos -->
+                                <th class="border border-gray-300 px-3 py-2 text-center font-semibold bg-blue-50">DÍA</th>
+                                <th class="border border-gray-300 px-3 py-2 text-center font-semibold bg-blue-50">NOCHE</th>
+                                <!-- Bodega turnos -->
+                                <th class="border border-gray-300 px-3 py-2 text-center font-semibold bg-green-50">DÍA</th>
+                                <th class="border border-gray-300 px-3 py-2 text-center font-semibold bg-green-50">NOCHE</th>
+                                <!-- Gasto turnos -->
+                                <th class="border border-gray-300 px-3 py-2 text-center font-semibold bg-red-50">DÍA</th>
+                                <th class="border border-gray-300 px-3 py-2 text-center font-semibold bg-red-50">NOCHE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($datosPorDias as $fecha => $datos)
+                                <!-- Efectivo -->
+                                <tr class="hover:bg-gray-50">
+                                    <td rowspan="3" class="border border-gray-300 px-3 py-4 text-center font-medium bg-gray-50">
+                                        {{ $datos['fecha']->format('d-M') }}
+                                    </td>
+                                    <td class="border border-gray-300 px-3 py-2 font-medium">EFECTIVO</td>
+                                    <!-- Hotel -->
+                                    <td class="border border-gray-300 px-3 py-2 text-center">
+                                        {{ number_format($datos['hotel']['dia']['efectivo'], 0) }}
+                                    </td>
+                                    <td class="border border-gray-300 px-3 py-2 text-center">
+                                        {{ number_format($datos['hotel']['noche']['efectivo'], 0) }}
+                                    </td>
+                                    <!-- Bodega -->
+                                    <td class="border border-gray-300 px-3 py-2 text-center">
+                                        {{ number_format($datos['bodega']['dia']['efectivo'], 0) }}
+                                    </td>
+                                    <td class="border border-gray-300 px-3 py-2 text-center">
+                                        {{ number_format($datos['bodega']['noche']['efectivo'], 0) }}
+                                    </td>
+                                    <!-- Gastos -->
+                                    <td class="border border-gray-300 px-3 py-2 text-center text-red-600">
+                                        {{ number_format($datos['gastos']['dia']['efectivo'], 0) }}
+                                    </td>
+                                    <td class="border border-gray-300 px-3 py-2 text-center text-red-600">
+                                        {{ number_format($datos['gastos']['noche']['efectivo'], 0) }}
+                                    </td>
+                                    <!-- Columnas auxiliares (efectivo neto) -->
+                                    @php
+                                        $efectivoDia = $datos['hotel']['dia']['efectivo'] + $datos['bodega']['dia']['efectivo'] - $datos['gastos']['dia']['efectivo'];
+                                        $efectivoNoche = $datos['hotel']['noche']['efectivo'] + $datos['bodega']['noche']['efectivo'] - $datos['gastos']['noche']['efectivo'];
+                                    @endphp
+                                    <td rowspan="3" class="border border-gray-300 px-3 py-2 text-center font-bold {{ $efectivoDia >= 0 ? 'text-green-600 bg-yellow-50' : 'text-red-600 bg-yellow-50' }}">
+                                        {{ number_format($efectivoDia, 0) }}
+                                    </td>
+                                    <td rowspan="3" class="border border-gray-300 px-3 py-2 text-center font-bold {{ $efectivoNoche >= 0 ? 'text-green-600 bg-yellow-50' : 'text-red-600 bg-yellow-50' }}">
+                                        {{ number_format($efectivoNoche, 0) }}
+                                    </td>
+                                </tr>
+
+                                <!-- Yape/Plin -->
+                                <tr class="hover:bg-gray-50">
+                                    <td class="border border-gray-300 px-3 py-2 font-medium">YAPE/PLIN</td>
+                                    <!-- Hotel -->
+                                    <td class="border border-gray-300 px-3 py-2 text-center">
+                                        {{ number_format($datos['hotel']['dia']['yape_plin'], 0) }}
+                                    </td>
+                                    <td class="border border-gray-300 px-3 py-2 text-center">
+                                        {{ number_format($datos['hotel']['noche']['yape_plin'], 0) }}
+                                    </td>
+                                    <!-- Bodega -->
+                                    <td class="border border-gray-300 px-3 py-2 text-center">
+                                        {{ number_format($datos['bodega']['dia']['yape_plin'], 0) }}
+                                    </td>
+                                    <td class="border border-gray-300 px-3 py-2 text-center">
+                                        {{ number_format($datos['bodega']['noche']['yape_plin'], 0) }}
+                                    </td>
+                                    <!-- Gastos -->
+                                    <td class="border border-gray-300 px-3 py-2 text-center text-red-600">
+                                        {{ number_format($datos['gastos']['dia']['yape_plin'], 0) }}
+                                    </td>
+                                    <td class="border border-gray-300 px-3 py-2 text-center text-red-600">
+                                        {{ number_format($datos['gastos']['noche']['yape_plin'], 0) }}
+                                    </td>
+                                </tr>
+
+                                <!-- Tarjeta -->
+                                <tr class="hover:bg-gray-50 border-b-2 border-gray-400">
+                                    <td class="border border-gray-300 px-3 py-2 font-medium">TARJETA</td>
+                                    <!-- Hotel -->
+                                    <td class="border border-gray-300 px-3 py-2 text-center">
+                                        {{ number_format($datos['hotel']['dia']['tarjeta'], 0) }}
+                                    </td>
+                                    <td class="border border-gray-300 px-3 py-2 text-center">
+                                        {{ number_format($datos['hotel']['noche']['tarjeta'], 0) }}
+                                    </td>
+                                    <!-- Bodega -->
+                                    <td class="border border-gray-300 px-3 py-2 text-center">
+                                        {{ number_format($datos['bodega']['dia']['tarjeta'], 0) }}
+                                    </td>
+                                    <td class="border border-gray-300 px-3 py-2 text-center">
+                                        {{ number_format($datos['bodega']['noche']['tarjeta'], 0) }}
+                                    </td>
+                                    <!-- Gastos -->
+                                    <td class="border border-gray-300 px-3 py-2 text-center text-red-600">
+                                        {{ number_format($datos['gastos']['dia']['tarjeta'], 0) }}
+                                    </td>
+                                    <td class="border border-gray-300 px-3 py-2 text-center text-red-600">
+                                        {{ number_format($datos['gastos']['noche']['tarjeta'], 0) }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             </div>
+        </div>
 
-            <!-- Resumen por Métodos de Pago -->
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg mt-8">
-                <div class="p-6">
-                    <h3 class="text-xl font-bold text-center mb-6 text-gray-800">RESUMEN POR MÉTODOS DE PAGO</h3>
-                    @php
-                        // Calcular totales combinados por método de pago
-                        $efectivoTotal = ($datosHotel['Efectivo']['ingreso'] ?? 0) + ($datosBodega['Efectivo']['ingreso'] ?? 0) - ($datosHotel['Efectivo']['gasto'] ?? 0) - ($datosBodega['Efectivo']['gasto'] ?? 0);
-                        $yapePlinTotal = ($datosHotel['Yape/Plin']['ingreso'] ?? 0) + ($datosBodega['Yape/Plin']['ingreso'] ?? 0) - ($datosHotel['Yape/Plin']['gasto'] ?? 0) - ($datosBodega['Yape/Plin']['gasto'] ?? 0);
-                        $cuentaBancariaTotal = ($datosHotel['Cuenta Bancaria']['ingreso'] ?? 0) + ($datosBodega['Cuenta Bancaria']['ingreso'] ?? 0) - ($datosHotel['Cuenta Bancaria']['gasto'] ?? 0) - ($datosBodega['Cuenta Bancaria']['gasto'] ?? 0);
-                    @endphp
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="text-center p-6 bg-green-50 rounded-lg border shadow-sm">
-                            <div class="text-3xl font-bold {{ $efectivoTotal >= 0 ? 'text-green-600' : 'text-red-600' }} mb-2">
-                                S/{{ number_format($efectivoTotal, 2) }}
-                            </div>
-                            <div class="text-sm font-medium text-gray-700">Efectivo</div>
-                            <div class="text-xs text-gray-500 mt-1">Hotel + Bodega</div>
-                        </div>
-                        <div class="text-center p-6 bg-blue-50 rounded-lg border shadow-sm">
-                            <div class="text-3xl font-bold {{ $yapePlinTotal >= 0 ? 'text-green-600' : 'text-red-600' }} mb-2">
-                                S/{{ number_format($yapePlinTotal, 2) }}
-                            </div>
-                            <div class="text-sm font-medium text-gray-700">Yape/Plin</div>
-                            <div class="text-xs text-gray-500 mt-1">Hotel + Bodega</div>
-                        </div>
-                        <div class="text-center p-6 bg-purple-50 rounded-lg border shadow-sm">
-                            <div class="text-3xl font-bold {{ $cuentaBancariaTotal >= 0 ? 'text-green-600' : 'text-red-600' }} mb-2">
-                                S/{{ number_format($cuentaBancariaTotal, 2) }}
-                            </div>
-                            <div class="text-sm font-medium text-gray-700">Cta. Bancaria</div>
-                            <div class="text-xs text-gray-500 mt-1">Hotel + Bodega</div>
-                        </div>
+        <!-- RESUMEN FINAL EN MATRIZ -->
+        <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg mt-8">
+            <div class="p-6">
+                <h3 class="text-xl font-bold text-center mb-6 text-gray-800">RESUMEN FINAL</h3>
+                <div class="flex justify-center">
+                    <div class="w-full max-w-2xl">
+                        <table class="w-full border-collapse border border-gray-300 text-lg">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="border border-gray-300 px-6 py-4 text-left font-bold"></th>
+                                    <th class="border border-gray-300 px-6 py-4 text-center font-bold">HOTEL</th>
+                                    <th class="border border-gray-300 px-6 py-4 text-center font-bold">BODEGA</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="border border-gray-300 px-6 py-4 font-bold">EFECTIVO</td>
+                                    <td class="border border-gray-300 px-6 py-4 text-center {{ $resumenFinal['hotel']['efectivo'] >= 0 ? 'text-green-600' : 'text-red-600' }} font-bold">
+                                        S/ {{ number_format($resumenFinal['hotel']['efectivo'], 0, ',', ',') }}
+                                    </td>
+                                    <td class="border border-gray-300 px-6 py-4 text-center {{ $resumenFinal['bodega']['efectivo'] >= 0 ? 'text-green-600' : 'text-red-600' }} font-bold">
+                                        S/ {{ number_format($resumenFinal['bodega']['efectivo'], 0, ',', ',') }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-gray-300 px-6 py-4 font-bold">CUENTA</td>
+                                    <td class="border border-gray-300 px-6 py-4 text-center {{ $resumenFinal['hotel']['cuenta'] >= 0 ? 'text-green-600' : 'text-red-600' }} font-bold">
+                                        S/ {{ number_format($resumenFinal['hotel']['cuenta'], 0, ',', ',') }}
+                                    </td>
+                                    <td class="border border-gray-300 px-6 py-4 text-center {{ $resumenFinal['bodega']['cuenta'] >= 0 ? 'text-green-600' : 'text-red-600' }} font-bold">
+                                        S/ {{ number_format($resumenFinal['bodega']['cuenta'], 0, ',', ',') }}
+                                    </td>
+                                </tr>
+                                <tr class="bg-blue-100 font-bold text-xl">
+                                    <td class="border border-gray-300 px-6 py-4 text-blue-800">TOTAL</td>
+                                    <td colspan="2" class="border border-gray-300 px-6 py-4 text-center text-2xl font-bold {{ $resumenFinal['totales']['total'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                        S/ {{ number_format($resumenFinal['totales']['total'], 0, ',', ',') }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            </div>
-
-            <!-- Resumen General -->
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg mt-8">
-                <div class="p-6">
-                    <h3 class="text-xl font-bold text-center mb-6 text-gray-800">RESUMEN GENERAL</h3>
-                    @php
-                        $totalIngresosGeneral = $totalIngresosHotel + $totalIngresosBodega;
-                        $totalGastosGeneral = $totalGastosHotel + $totalGastosBodega;
-                        $totalGeneral = $totalIngresosGeneral - $totalGastosGeneral;
-                    @endphp
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="text-center p-4 bg-blue-50 rounded-lg border">
-                            <div class="text-2xl font-bold text-blue-600">S/{{ number_format($totalIngresosGeneral, 2) }}</div>
-                            <div class="text-sm text-gray-600">Total Ingresos</div>
-                        </div>
-                        <div class="text-center p-4 bg-red-50 rounded-lg border">
-                            <div class="text-2xl font-bold text-red-600">S/{{ number_format($totalGastosGeneral, 2) }}</div>
-                            <div class="text-sm text-gray-600">Total Gastos</div>
-                        </div>
-                        <div class="text-center p-4 {{ $totalGeneral >= 0 ? 'bg-green-50' : 'bg-red-50' }} rounded-lg border">
-                            <div class="text-2xl font-bold {{ $totalGeneral >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                                S/{{ number_format($totalGeneral, 2) }}
-                            </div>
-                            <div class="text-sm text-gray-600">Balance Total</div>
-                        </div>
+                
+                <!-- Información adicional -->
+                <div class="mt-6 text-center">
+                    <div class="inline-flex items-center px-4 py-2 bg-yellow-100 border border-yellow-300 rounded-lg">
+                        <i class='bx bx-info-circle text-yellow-600 mr-2'></i>
+                        <span class="text-sm text-yellow-800">
+                            Las columnas DÍA y NOCHE muestran el efectivo neto para cuadre de caja
+                        </span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const personalizadoBtn = document.getElementById('personalizadoBtn');
-            const fechasPersonalizadas = document.getElementById('fechasPersonalizadas');
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar Flatpickr para selección múltiple de fechas
+    const fechasInput = document.getElementById('fechasInput');
+    const fechasHiddenInputs = document.getElementById('fechasHiddenInputs');
+    
+    // Fechas actualmente seleccionadas
+    const fechasSeleccionadas = @json($fechasSeleccionadas);
+    
+    const fp = flatpickr(fechasInput, {
+        mode: "multiple",
+        dateFormat: "Y-m-d",
+        defaultDate: fechasSeleccionadas,
+        locale: "es",
+        maxDate: "today",
+        onClose: function(selectedDates, dateStr) {
+            // Actualizar el texto del input
+            if (selectedDates.length > 0) {
+                const fechasTexto = selectedDates.map(fecha => 
+                    fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                ).join(', ');
+                fechasInput.value = fechasTexto;
+            } else {
+                fechasInput.value = '';
+            }
             
-            personalizadoBtn.addEventListener('click', function() {
-                fechasPersonalizadas.classList.toggle('hidden');
-                
-                // Actualizar el estado visual del botón
-                const isActive = !fechasPersonalizadas.classList.contains('hidden');
-                if (isActive) {
-                    personalizadoBtn.classList.remove('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
-                    personalizadoBtn.classList.add('bg-blue-600', 'text-white');
-                } else {
-                    personalizadoBtn.classList.remove('bg-blue-600', 'text-white');
-                    personalizadoBtn.classList.add('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
-                }
+            // Actualizar campos ocultos
+            fechasHiddenInputs.innerHTML = '';
+            selectedDates.forEach(fecha => {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'fechas[]';
+                hiddenInput.value = fecha.toISOString().split('T')[0];
+                fechasHiddenInputs.appendChild(hiddenInput);
             });
-        });
-    </script>
+        }
+    });
+    
+    // Establecer texto inicial
+    if (fechasSeleccionadas.length > 0) {
+        const fechasTexto = fechasSeleccionadas.map(fecha => {
+            const date = new Date(fecha + 'T00:00:00');
+            return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }).join(', ');
+        fechasInput.value = fechasTexto;
+    }
+});
+</script>
 
 @endsection

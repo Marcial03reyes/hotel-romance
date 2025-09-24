@@ -315,10 +315,10 @@
 const datosHotel = @json($datosGraficos['hotel']);
 const datosBodega = @json($datosGraficos['bodega']);
 
-// Función para extraer solo el mes abreviado
+// Función para mostrar el período completo (ya viene formateado del backend como "Ago-Sep")
 function extraerMesAbreviado(nombreCompleto) {
-    // Extraer solo las primeras 3 letras del mes
-    return nombreCompleto.substring(0, 3);
+    // Retornar el nombre tal como viene del backend (formato "Ago-Sep")
+    return nombreCompleto;
 }
 
 // Preparar datos para gráfico HOTEL
