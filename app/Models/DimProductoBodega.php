@@ -12,7 +12,10 @@ class DimProductoBodega extends Model
     public $timestamps = false;
     
     // IMPORTANTE: Agregar este array para permitir create()
-    protected $fillable = ['nombre'];
+    protected $fillable = [
+        'nombre',
+        'precio_actual'  // ← Debe estar aquí
+    ];
 
     /**
      * Relación con las compras de bodega (productos para reventa)

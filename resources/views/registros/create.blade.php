@@ -180,117 +180,126 @@
                 </div>
             </div>
 
-            <!-- Información de la estadí­a -->
+            <!-- Información de la estadía -->
             <div class="bg-white p-6 rounded-lg shadow-sm border">
-                <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    <i class='bx bx-bed mr-2' style="color: #6B8CC7;"></i>
-                    Detalles de la estadí­a
-                </h2>
+                    
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class='bx bx-bed mr-2' style="color: #6B8CC7;"></i>
+                        Detalles de la estadía
+                    </h2>
 
-
-                <!-- Campos auxiliares solo para turno NOCHE -->
-                <div id="campos-auxiliares-noche" class="mt-4" style="display: none;">
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                        <div class="flex items-center mb-3">
-                            <i class='bx bx-moon text-blue-600 mr-2'></i>
-                            <h3 class="text-sm font-semibold text-blue-800">Horario Real (Solo Turno Noche)</h3>
-                        </div>
-                        <p class="text-xs text-blue-700 mb-3">
-                            Para turno noche, registra la fecha y hora real de ingreso del cliente
-                        </p>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    <i class='bx bx-calendar mr-1'></i>
-                                    Fecha Real de Ingreso *
-                                </label>
-                                <input name="fecha_ingreso_real" id="fecha_ingreso_real" type="date" 
-                                    value="{{ now()->format('Y-m-d') }}"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <p class="text-xs text-gray-500 mt-1">Fecha real cuando llegó el cliente</p>
-                            </div>
+                    <!-- Campos auxiliares solo para turno NOCHE -->
+                    <div id="campos-auxiliares-noche" class="mt-4" style="display: none;">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                             
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    <i class='bx bx-time mr-1'></i>
-                                    Hora Real de Ingreso *
-                                </label>
-                                <input name="hora_ingreso_real" id="hora_ingreso_real" type="time" 
-                                    value="{{ now()->format('H:i') }}"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <p class="text-xs text-gray-500 mt-1">Hora real cuando llegó el cliente</p>
+                            <div class="flex items-center mb-3">
+                                <i class='bx bx-moon text-blue-600 mr-2'></i>
+                                <h3 class="text-sm font-semibold text-blue-800">Horario Real (Solo Turno Noche)</h3>
                             </div>
+
+                            <p class="text-xs text-blue-700 mb-3">
+                                Para turno noche, registra la fecha y hora real de ingreso del cliente
+                            </p>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        <i class='bx bx-calendar mr-1'></i>
+                                        Fecha Real de Ingreso *
+                                    </label>
+
+                                    <input name="fecha_ingreso_real" id="fecha_ingreso_real" type="date" 
+                                        value="{{ now()->format('Y-m-d') }}"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <p class="text-xs text-gray-500 mt-1">Fecha real cuando llegó el cliente</p>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                                        <i class='bx bx-time mr-1'></i>
+                                        Hora Real de Ingreso *
+                                    </label>
+
+                                    <input name="hora_ingreso_real" id="hora_ingreso_real" type="time" 
+                                        value="{{ now()->format('H:i') }}"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <p class="text-xs text-gray-500 mt-1">Hora real cuando llegó el cliente</p>
+                                </div>
+
+                            </div>
+
                         </div>
                     </div>
-                </div>
-                
-                <div class="grid grid-cols-3 gap-4 mb-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            <i class='bx bx-time mr-1'></i>
-                            Hora de Ingreso *
-                        </label>
-                        <input name="hora_ingreso" type="time" value="{{ now()->format('H:i') }}"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                               required>
+                    
+                    <div class="grid grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class='bx bx-time mr-1'></i>
+                                Hora de Ingreso *
+                            </label>
+                            <input name="hora_ingreso" type="time" value="{{ now()->format('H:i') }}"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class='bx bx-time-five mr-1'></i>
+                                Hora de Salida (Opcional)
+                            </label>
+                            <input name="hora_salida" type="time" value="{{ old('hora_salida') }}"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <small class="text-xs text-gray-500 mt-1">
+                                <i class='bx bx-info-circle mr-1'></i>
+                                Se puede registrar después
+                            </small>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class='bx bx-calendar mr-1'></i>
+                                Fecha de Ingreso *
+                            </label>
+                            <input name="fecha_ingreso" type="date" value="{{ now()->format('Y-m-d') }}"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                required>
+                        </div>
+                        
                     </div>
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
-                            <i class='bx bx-time-five mr-1'></i>
-                            Hora de Salida (Opcional)
+                            <i class='bx bx-home mr-1'></i>
+                            Habitación *
                         </label>
-                        <input name="hora_salida" type="time" value="{{ old('hora_salida') }}"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <small class="text-xs text-gray-500 mt-1">
-                            <i class='bx bx-info-circle mr-1'></i>
-                            Se puede registrar después
-                        </small>
+                        <select name="habitacion" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                            <option value="">Selecciona una Habitación</option>
+                            @foreach($habitaciones as $habitacion)
+                                <option value="{{ $habitacion }}">Hab. {{ $habitacion }}</option>
+                            @endforeach
+                        </select>
                     </div>
 
-                    <div>
+                    <div class="mt-4">
                         <label class="block text-sm font-medium text-gray-700 mb-1">
-                            <i class='bx bx-calendar mr-1'></i>
-                            Fecha de Ingreso *
+                            <i class='bx bx-note mr-1'></i>
+                            Observaciones
                         </label>
-                        <input name="fecha_ingreso" type="date" value="{{ now()->format('Y-m-d') }}"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                               required>
+                        <textarea name="obs" rows="3" maxlength="1000"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Número de placa, notas especiales, etc..."></textarea>
+                        <p class="text-xs text-gray-500 mt-1">
+                            <i class='bx bx-info-circle mr-1'></i>
+                            Campo opcional para observaciones adicionales
+                        </p>
                     </div>
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        <i class='bx bx-home mr-1'></i>
-                        Habitación *
-                    </label>
-                    <select name="habitacion" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
-                        <option value="">Selecciona una Habitación</option>
-                        @foreach($habitaciones as $habitacion)
-                            <option value="{{ $habitacion }}">Hab. {{ $habitacion }}</option>
-                        @endforeach
-                    </select>
-                </div>
 
-                <div class="mt-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        <i class='bx bx-note mr-1'></i>
-                        Observaciones
-                    </label>
-                    <textarea name="obs" rows="3" maxlength="1000"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Número de placa, notas especiales, etc..."></textarea>
-                    <p class="text-xs text-gray-500 mt-1">
-                        <i class='bx bx-info-circle mr-1'></i>
-                        Campo opcional para observaciones adicionales
-                    </p>
-                </div>
             </div>
-        </div>
+
+        </div>  
 
         <!-- Información de Pago -->
-        <div class="field-group">
+        <div class="bg-white p-6 rounded-lg shadow-sm border">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-lg font-semibold text-gray-800 flex items-center">
                     <i class='bx bx-credit-card mr-2 icon-azul'></i>
@@ -299,7 +308,7 @@
                 <button type="button" id="btn-add-pago" 
                         class="inline-flex items-center bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-all">
                     <i class='bx bx-plus mr-2'></i>
-                    Agregar MÃ©todo de Pago
+                    Agregar Método de Pago
                 </button>
             </div>
 
@@ -318,7 +327,7 @@
                 <p class="text-xs text-gray-500 mt-1">Monto total que debe pagar el huésped por la habitación</p>
             </div>
         
-            <!-- MÃ©todos de Pago -->
+            <!-- Métodos de Pago -->
             <div id="pagos-wrapper" class="space-y-4 mb-6">
                 <!-- Primer mÃ©todo de pago (siempre visible) -->
                 <div class="pago-item" data-pago-index="0">
@@ -411,33 +420,9 @@
                                     class="input-field w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg transition-all" 
                                     placeholder="0.00">
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">Especifica cuÃ¡nto del total se incluirÃ¡ en la boleta</p>
+                        <p class="text-xs text-gray-500 mt-1">Especifica cuánto del total se incluirÃ¡ en la boleta</p>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Consumos Adicionales -->
-        <div class="bg-white p-6 rounded-lg shadow-sm border">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-semibold text-gray-800 flex items-center">
-                    <i class='bx bx-receipt mr-2' style="color: #6B8CC7;"></i>
-                    Consumos Adicionales (Opcional)
-                </h2>
-                <button type="button" id="btn-add-consumo" 
-                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-all">
-                    <i class='bx bx-plus mr-2'></i>
-                    Agregar Consumo
-                </button>
-            </div>
-            
-            <div id="consumos-wrapper" class="space-y-4">
-                <!-- Los consumos se agregarÃ¡n dinÃ¡micamente aquÃ­ -->
-            </div>
-            
-            <div class="text-sm text-gray-500 mt-2">
-                <i class='bx bx-info-circle mr-1'></i>
-                Puedes agregar productos que el huésped haya consumido durante su estadí­a
             </div>
         </div>
 
@@ -499,14 +484,6 @@
     border: 1px solid #fde68a;
 }
 
-.consumo-item {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin-bottom: 1rem;
-}
-
 .pago-item {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
@@ -552,7 +529,7 @@
 }
 
 .turno-radio:checked + .turno-button::after {
-    content: 'âœ“';
+    content: '✓';
     position: absolute;
     top: 8px;
     right: 8px;
@@ -646,7 +623,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const montoBletaContainer = document.getElementById('monto-boleta-container');
     const montoBletaInput = document.getElementById('monto_boleta');
     
-    let pagoIndex = 1;
+    let pagoIndex = 0;
 
     // Referencias a campos adicionales
     const estadoCivilSelect = document.getElementById('estado_civil');
@@ -722,15 +699,20 @@ document.addEventListener('DOMContentLoaded', function() {
         return Math.max(...existingNumbers) + 1;
     }
 
+    // DEBUG: Verificar qué se genera al agregar un pago
     function addPagoRow() {
         const nextNumber = getNextPagoNumber();
+        const selectOriginal = document.querySelector('select[name="id_met_pago"]');
+        const opcionesHTML = selectOriginal.innerHTML;
+        
+        // NO incrementar aquí todavía
         
         const div = document.createElement('div');
         div.className = 'pago-item';
         div.setAttribute('data-pago-index', pagoIndex);
         div.innerHTML = `
             <div class="flex items-center justify-between mb-3">
-                <h4 class="font-medium text-gray-700">MÃ©todo de Pago #${nextNumber}</h4>
+                <h4 class="font-medium text-gray-700">Método de Pago #${nextNumber}</h4>
                 <button type="button" onclick="removePagoRow(this)" 
                         class="text-red-500 hover:text-red-700 transition-colors">
                     <i class='bx bx-trash'></i>
@@ -740,13 +722,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         <i class='bx bx-wallet mr-1'></i>
-                        MÃ©todo de Pago *
+                        Método de Pago *
                     </label>
                     <select name="pagos[${pagoIndex}][id_met_pago]" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all metodo-pago" required>
-                        <option value="">Selecciona un método</option>
-                        @foreach($metodos as $metodo)
-                            <option value="{{ $metodo->id_met_pago }}">{{ $metodo->met_pago }}</option>
-                        @endforeach
+                        ${opcionesHTML}
                     </select>
                 </div>
                 <div>
@@ -763,10 +742,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
         `;
+        
         pagosWrapper.appendChild(div);
+        
+        // INCREMENTAR DESPUÉS de usar
         pagoIndex++;
         
-        // Actualizar eventos
+        console.log('Pago agregado. Index usado:', pagoIndex - 1);
+        
         updatePagoEvents();
         updateBoletaVisibility();
     }
@@ -1060,59 +1043,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Hacer funciÃ³n removePagoRow global
     window.removePagoRow = removePagoRow;
 
-    // === CONSUMOS ===
-    const consumosWrapper = document.getElementById('consumos-wrapper');
-    const btnAddConsumo = document.getElementById('btn-add-consumo');
-    let consumoIndex = 0;
-
-    function addConsumoRow() {
-        const div = document.createElement('div');
-        div.className = 'consumo-item';
-        div.innerHTML = `
-            <div class="flex items-center justify-between mb-3">
-                <h4 class="font-medium text-gray-700">Consumo #${consumoIndex + 1}</h4>
-                <button type="button" onclick="this.parentElement.parentElement.remove()" 
-                        class="text-red-500 hover:text-red-700 transition-colors">
-                    <i class='bx bx-trash'></i>
-                </button>
-            </div>
-            <div class="grid md:grid-cols-4 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Producto</label>
-                    <select name="consumo[${consumoIndex}][id_prod_bod]" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                        <option value="">Seleccionar</option>
-                        @foreach($productos as $producto)
-                            <option value="{{ $producto->id_prod_bod }}">{{ $producto->nombre }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
-                    <input name="consumo[${consumoIndex}][cantidad]" type="number" min="1" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="1">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Precio Unit.</label>
-                    <input name="consumo[${consumoIndex}][precio_unitario]" type="number" step="0.01" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="0.00">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">MÃ©todo Pago</label>
-                    <select name="consumo[${consumoIndex}][id_met_pago]" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                        <option value="">Seleccionar</option>
-                        @foreach($metodos as $metodo)
-                            <option value="{{ $metodo->id_met_pago }}">{{ $metodo->met_pago }}</option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-        `;
-        consumosWrapper.appendChild(div);
-        consumoIndex++;
-    }
-
-    btnAddConsumo.addEventListener('click', addConsumoRow);
-
     // === SISTEMA DE PASOS ===
     function updateStepStatus(stepNumber, status) {
         const step = document.getElementById(`step${stepNumber}`);
@@ -1121,6 +1051,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // === VALIDACIÓN FINAL ===
     // === VALIDACIÓN FINAL ===
     document.getElementById('form-registro').addEventListener('submit', function(e) {
         if (!clienteVerificado) {
@@ -1148,16 +1079,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Validar turno seleccionado
         const turnoSeleccionado = document.querySelector('input[name="turno"]:checked');
         if (!turnoSeleccionado) {
             e.preventDefault();
             alert('Debes seleccionar un turno (DÍA o NOCHE)');
-            document.querySelector('input[name="turno"]').focus();
             return false;
         }
 
-        // Validar campos auxiliares para turno NOCHE
         if (turnoSeleccionado.value === '1') {
             const fechaReal = document.getElementById('fecha_ingreso_real').value;
             const horaReal = document.getElementById('hora_ingreso_real').value;
@@ -1169,20 +1097,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Validar tarifa
         const tarifaTotal = parseFloat(tarifaTotalInput.value) || 0;
         if (!tarifaTotal || tarifaTotal <= 0) {
             e.preventDefault();
-            alert('¡La tarifa total debe ser mayor a 0!');
+            alert('La tarifa total debe ser mayor a 0');
             tarifaTotalInput.focus();
             return false;
         }
         
-        // Validar pagos
         let totalPagado = 0;
         let pagosValidos = 0;
         
-        document.querySelectorAll('.pago-item').forEach((item, index) => {
+        document.querySelectorAll('.pago-item').forEach((item) => {
             const metodo = item.querySelector('.metodo-pago').value;
             const monto = parseFloat(item.querySelector('.monto-pago').value) || 0;
             
@@ -1194,7 +1120,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (pagosValidos === 0) {
             e.preventDefault();
-            alert('¡Debe especificar al menos un método de pago válido');
+            alert('Debe especificar al menos un método de pago válido');
             return false;
         }
         
@@ -1213,13 +1139,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const habitacion = document.querySelector('[name="habitacion"]').value;
         const monto = document.querySelector('[name="monto"]').value;
         
-        const mensaje = `¿Confirmar registro?\n\nCliente: ${nombre}\nHabitación: ${habitacion}\nMonto: S/ ${monto}`;
-        
-        if (!confirm(mensaje)) {
+        if (!confirm(`¿Confirmar registro?\n\nCliente: ${nombre}\nHabitación: ${habitacion}\nMonto: S/ ${monto}`)) {
             e.preventDefault();
             return false;
         }
         
+        // Si todo está OK, permitir envío
         return true;
     });
 

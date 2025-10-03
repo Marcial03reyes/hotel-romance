@@ -106,6 +106,34 @@
                             Máximo 50 caracteres. El nombre debe ser único.
                         </p>
                     </div>
+
+                    <!-- Precio de venta -->
+                    <div class="mt-6">
+                        <label for="precio_actual" class="block text-sm font-medium text-gray-700 mb-2">
+                            Precio de Venta Actual <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative max-w-xs">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 font-medium">
+                                S/
+                            </span>
+                            <input type="number" 
+                                id="precio_actual" 
+                                name="precio_actual" 
+                                value="{{ old('precio_actual', $producto->precio_actual) }}"
+                                step="0.01"
+                                min="0.01"
+                                max="9999.99"
+                                class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm @error('precio_actual') border-red-300 @enderror"
+                                placeholder="0.00"
+                                required>
+                        </div>
+                        @error('precio_actual')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-1 text-xs text-gray-500">
+                            Precio sugerido de venta. Se usa como referencia para nuevas ventas.
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Información del producto -->
@@ -195,9 +223,13 @@
 
 @push('scripts')
 <script>
+
 document.addEventListener('DOMContentLoaded', function() {
     const nombreInput = document.getElementById('nombre');
+    const precioInput = document.getElementById('precio_actual');
     const nombreOriginal = "{{ $producto->nombre }}";
+    const precioOriginal = "{{ $producto->precio_actual }}";
+    const formulario = document.querySelector('form');
     
     // Auto-focus en el campo nombre
     nombreInput.focus();
@@ -210,24 +242,29 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Advertir si se intenta salir sin guardar cambios
-    let cambiosRealizados = false;
-    nombreInput.addEventListener('input', function() {
-        cambiosRealizados = this.value !== nombreOriginal;
+    // Desactivar advertencia al enviar formulario
+    formulario.addEventListener('submit', function() {
+        window.onbeforeunload = null;
     });
     
-    window.addEventListener('beforeunload', function(e) {
-        if (cambiosRealizados) {
-            e.preventDefault();
-            e.returnValue = '';
+    // Advertir solo si hay cambios Y NO se está enviando
+    function verificarCambios() {
+        const hayNombreCambiado = nombreInput.value !== nombreOriginal;
+        const hayPrecioCambiado = precioInput.value !== precioOriginal;
+        
+        if (hayNombreCambiado || hayPrecioCambiado) {
+            window.onbeforeunload = function() {
+                return "¿Seguro que quieres salir sin guardar?";
+            };
+        } else {
+            window.onbeforeunload = null;
         }
-    });
+    }
     
-    // No advertir al enviar el formulario
-    document.querySelector('form').addEventListener('submit', function() {
-        cambiosRealizados = false;
-    });
+    nombreInput.addEventListener('input', verificarCambios);
+    precioInput.addEventListener('input', verificarCambios);
 });
-</script>
+
+
 @endpush
 @endsection

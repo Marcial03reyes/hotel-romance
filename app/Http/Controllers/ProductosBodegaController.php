@@ -20,10 +20,14 @@ class ProductosBodegaController extends Controller
             // Obtener productos con estadísticas calculadas
             $productos = DB::table('dim_productos_bodega as dpb')
                 ->leftJoin('fact_compra_bodega as fcb', 'dpb.id_prod_bod', '=', 'fcb.id_prod_bod')
-                ->leftJoin('fact_pago_prod as fpp', 'dpb.id_prod_bod', '=', 'fpp.id_prod_bod')
+                ->leftJoin('fact_pago_prod as fpp', function($join) {
+                    $join->on('dpb.id_prod_bod', '=', 'fpp.id_prod_bod')
+                        ->whereNull('fpp.id_estadia'); // Solo ventas de bodega
+                })
                 ->select(
                     'dpb.id_prod_bod',
                     'dpb.nombre',
+                    'dpb.precio_actual',
                     DB::raw('COALESCE(SUM(fcb.cantidad), 0) as unidades_compradas'),
                     DB::raw('COALESCE(SUM(fpp.cantidad), 0) as unidades_vendidas'),
                     DB::raw('COALESCE(SUM(fcb.cantidad), 0) - COALESCE(SUM(fpp.cantidad), 0) as stock'),
@@ -31,7 +35,7 @@ class ProductosBodegaController extends Controller
                     DB::raw('COUNT(DISTINCT fcb.id_compra_bodega) as total_compras'),
                     DB::raw('MAX(fcb.fecha_compra) as ultima_compra')
                 )
-                ->groupBy('dpb.id_prod_bod', 'dpb.nombre')
+                ->groupBy('dpb.id_prod_bod', 'dpb.nombre', 'dpb.precio_actual')
                 ->orderBy('dpb.nombre')
                 ->get();
             
@@ -58,31 +62,70 @@ class ProductosBodegaController extends Controller
                 ->orderByDesc('id_compra_bodega')
                 ->get();
             
-            // Calcular estadísticas totales
+            // Calcular estadísticas totales de COMPRAS
             $totalComprado = $historialCompras->sum('cantidad');
             
             $inversionTotal = $historialCompras->sum(function($compra) {
                 return $compra->cantidad * $compra->precio_unitario;
             });
             
-            // Calcular precio promedio por unidad
-            $precioPromedio = $totalComprado > 0 ? $inversionTotal / $totalComprado : 0;
+            // Precio promedio de COMPRA
+            $precioPromedioCompra = $totalComprado > 0 ? $inversionTotal / $totalComprado : 0;
             
-            // Obtener estadísticas de ventas (consumos)
-            $totalVendido = DB::table('fact_pago_prod')
+            // Obtener estadísticas de VENTAS
+            $ventas = DB::table('fact_pago_prod')
                 ->where('id_prod_bod', $id)
-                ->sum('cantidad');
+                ->whereNull('id_estadia')
+                ->selectRaw('
+                    SUM(cantidad) as total_vendido,
+                    SUM(cantidad * precio_unitario) as ingresos_totales,
+                    MIN(fecha_venta) as primera_venta,
+                    MAX(fecha_venta) as ultima_venta
+                ')
+                ->first();
             
+            $totalVendido = $ventas->total_vendido ?? 0;
+            $ingresosTotales = $ventas->ingresos_totales ?? 0;
+            
+            // Stock actual
             $stockActual = $totalComprado - $totalVendido;
+            
+            // === NUEVOS CÁLCULOS ===
+            
+            // 1. ROTACIÓN MENSUAL (Días que dura el stock)
+            $rotacionMensual = null;
+            if ($totalVendido > 0 && $ventas->primera_venta) {
+                $diasTranscurridos = now()->diffInDays($ventas->primera_venta);
+                if ($diasTranscurridos > 0) {
+                    $ventasDiarias = $totalVendido / $diasTranscurridos;
+                    $rotacionMensual = $ventasDiarias > 0 ? round($stockActual / $ventasDiarias) : 'N/A';
+                }
+            }
+            
+            // 2. GANANCIA MENSUAL PROMEDIO
+            $gananciaMensual = null;
+            if ($totalVendido > 0 && $ventas->primera_venta) {
+                // Precio promedio de venta
+                $precioPromedioVenta = $ingresosTotales / $totalVendido;
+                
+                // Ganancia total
+                $gananciaTotal = ($precioPromedioVenta - $precioPromedioCompra) * $totalVendido;
+                
+                // Convertir a ganancia mensual
+                $mesesTranscurridos = max(1, now()->diffInMonths($ventas->primera_venta));
+                $gananciaMensual = $gananciaTotal / $mesesTranscurridos;
+            }
             
             return view('productos-bodega.historial', compact(
                 'producto', 
                 'historialCompras', 
                 'totalComprado', 
                 'inversionTotal',
-                'precioPromedio',
+                'precioPromedioCompra',
                 'totalVendido',
-                'stockActual'
+                'stockActual',
+                'rotacionMensual',      // NUEVO
+                'gananciaMensual'       // NUEVO
             ));
             
         } catch (\Exception $e) {
@@ -236,7 +279,8 @@ class ProductosBodegaController extends Controller
         try {
             // Crear el producto usando el modelo con $fillable
             $producto = DimProductoBodega::create([
-                'nombre' => trim($request->nombre)
+                'nombre' => trim($request->nombre),
+                'precio_actual' => $request->precio_actual
             ]);
 
             return redirect()
@@ -376,7 +420,10 @@ class ProductosBodegaController extends Controller
             $tieneCompras = FactCompraBodega::where('id_prod_bod', $id)->exists();
             
             // Verificar que no tenga ventas registradas
-            $tieneVentas = DB::table('fact_pago_prod')->where('id_prod_bod', $id)->exists();
+            $tieneVentas = DB::table('fact_pago_prod')
+                ->where('id_prod_bod', $id)
+                ->whereNull('id_estadia') // Solo ventas de bodega
+                ->exists();
             
             if ($tieneCompras || $tieneVentas) {
                 return back()->withErrors('No se puede eliminar el producto porque tiene compras o ventas registradas.');
@@ -423,11 +470,21 @@ class ProductosBodegaController extends Controller
                 'string',
                 'max:50',
                 'unique:dim_productos_bodega,nombre,' . $id . ',id_prod_bod'
+            ],
+            'precio_actual' => [
+                'required',
+                'numeric',
+                'min:0.01',
+                'max:9999.99'
             ]
         ], [
             'nombre.required' => 'El nombre del producto es obligatorio',
             'nombre.max' => 'El nombre no puede exceder 50 caracteres',
-            'nombre.unique' => 'Ya existe un producto con este nombre'
+            'nombre.unique' => 'Ya existe un producto con este nombre',
+            'precio_actual.required' => 'El precio es obligatorio',
+            'precio_actual.numeric' => 'El precio debe ser un número válido',
+            'precio_actual.min' => 'El precio debe ser mayor a 0',
+            'precio_actual.max' => 'El precio no puede exceder S/ 9,999.99'
         ]);
 
         if ($validator->fails()) {
@@ -439,7 +496,8 @@ class ProductosBodegaController extends Controller
         try {
             // Actualizar el producto
             $producto->update([
-                'nombre' => trim($request->nombre)
+                'nombre' => trim($request->nombre),
+                'precio_actual' => $request->precio_actual
             ]);
 
             return redirect()
@@ -472,6 +530,7 @@ class ProductosBodegaController extends Controller
             // Obtener estadísticas de ventas
             $unidadesVendidas = DB::table('fact_pago_prod')
                 ->where('id_prod_bod', $id)
+                ->whereNull('id_estadia') // Solo ventas de bodega
                 ->sum('cantidad');
             
             $stats = [

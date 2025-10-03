@@ -45,12 +45,14 @@
             </div>
 
             <!-- Estadísticas en tarjetas -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Stock Actual -->
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm font-medium text-blue-600">Stock Actual</p>
                             <p class="text-2xl font-bold text-blue-900">{{ $stockActual }}</p>
+                            <p class="text-xs text-blue-600 mt-1">unidades disponibles</p>
                         </div>
                         <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                             <i class='bx bx-package text-blue-600 text-xl'></i>
@@ -58,42 +60,45 @@
                     </div>
                 </div>
                 
+                <!-- Rotación Mensual -->
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-orange-600">Rotación</p>
+                            @if($rotacionMensual !== null)
+                                <p class="text-2xl font-bold text-orange-900">{{ $rotacionMensual }}</p>
+                                <p class="text-xs text-orange-600 mt-1">días de stock</p>
+                            @else
+                                <p class="text-lg font-medium text-orange-900">Sin datos</p>
+                                <p class="text-xs text-orange-600 mt-1">aún no hay ventas</p>
+                            @endif
+                        </div>
+                        <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                            <i class='bx bx-time text-orange-600 text-xl'></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Ganancia Mensual Promedio -->
                 <div class="bg-green-50 border border-green-200 rounded-lg p-4">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-medium text-green-600">Total Comprado</p>
-                            <p class="text-2xl font-bold text-green-900">{{ $totalComprado }}</p>
+                            <p class="text-sm font-medium text-green-600">Ganancia Mensual</p>
+                            @if($gananciaMensual !== null)
+                                <p class="text-2xl font-bold text-green-900">S/ {{ number_format($gananciaMensual, 2) }}</p>
+                                <p class="text-xs text-green-600 mt-1">promedio mensual</p>
+                            @else
+                                <p class="text-lg font-medium text-green-900">Sin datos</p>
+                                <p class="text-xs text-green-600 mt-1">aún no hay ventas</p>
+                            @endif
                         </div>
                         <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                            <i class='bx bx-trending-up text-green-600 text-xl'></i>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-red-600">Total Vendido</p>
-                            <p class="text-2xl font-bold text-red-900">{{ $totalVendido }}</p>
-                        </div>
-                        <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                            <i class='bx bx-trending-down text-red-600 text-xl'></i>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-purple-600">Inversión Total</p>
-                            <p class="text-2xl font-bold text-purple-900">S/ {{ number_format($inversionTotal, 2) }}</p>
-                        </div>
-                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                            <i class='bx bx-dollar text-purple-600 text-xl'></i>
+                            <i class='bx bx-dollar text-green-600 text-xl'></i>
                         </div>
                     </div>
                 </div>
             </div>
+            
         </div>
 
         <!-- Alertas -->
@@ -160,9 +165,6 @@
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-medium text-gray-900">
                                         {{ $compra->fecha_compra->format('d/m/Y') }}
-                                    </div>
-                                    <div class="text-sm text-gray-500">
-                                        {{ $compra->created_at ? $compra->created_at->format('H:i') : '' }}
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">

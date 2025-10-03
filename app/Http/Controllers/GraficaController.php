@@ -224,7 +224,7 @@ class GraficaController extends Controller
     {
         $ultimosPeriodos = $this->getPeriodosConDatos();
         
-        // Ingresos de bodega usando UNION ALL
+        // Ingresos de bodega - SOLO ventas sin cliente (id_estadia NULL)
         $queriesIngresos = [];
         foreach ($ultimosPeriodos as $periodo) {
             $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
@@ -235,16 +235,16 @@ class GraficaController extends Controller
                     '{$periodo['clave_periodo']}' as periodo_clave,
                     SUM(fpp.cantidad * fpp.precio_unitario) as total_ingresos
                 FROM fact_pago_prod fpp
-                INNER JOIN fact_registro_clientes frc ON frc.id_estadia = fpp.id_estadia
-                WHERE frc.fecha_ingreso >= '{$fechaInicio}'
-                    AND frc.fecha_ingreso <= '{$fechaFin}'
+                WHERE fpp.id_estadia IS NULL
+                    AND fpp.fecha_venta >= '{$fechaInicio}'
+                    AND fpp.fecha_venta <= '{$fechaFin}'
             )";
         }
         
         $unionQueryIngresos = implode(' UNION ALL ', $queriesIngresos);
         $ingresos = collect(DB::select($unionQueryIngresos));
             
-        // Gastos de bodega usando UNION ALL
+        // Gastos de bodega usando UNION ALL (sin cambios)
         $queriesGastos = [];
         foreach ($ultimosPeriodos as $periodo) {
             $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
@@ -267,7 +267,7 @@ class GraficaController extends Controller
             
         return $this->combinarDatosPorPeriodos($ingresos, $gastos, $ultimosPeriodos);
     }
-    
+
     /**
      * Combinar datos de ingresos y gastos por período
      */

@@ -20,8 +20,7 @@ class FactRegistroClienteController extends Controller
         $query = DB::table('fact_registro_clientes as fr')
             ->leftJoin('dim_registro_clientes as c', 'c.doc_identidad', '=', 'fr.doc_identidad')
             ->leftJoin('fact_pago_hab as ph', 'ph.id_estadia', '=', 'fr.id_estadia')
-            ->leftJoin('dim_met_pago as mp', 'mp.id_met_pago', '=', 'ph.id_met_pago')
-            ->leftJoin('fact_pago_prod as pp', 'pp.id_estadia', '=', 'fr.id_estadia');
+            ->leftJoin('dim_met_pago as mp', 'mp.id_met_pago', '=', 'ph.id_met_pago');
 
         // Aplicar filtros de fecha
         $filtro = $request->get('filtro', 'todos');
@@ -64,8 +63,7 @@ class FactRegistroClienteController extends Controller
                 'fr.fecha_ingreso',
                 'fr.turno',
                 'fr.fecha_ingreso_real',
-                'fr.hora_ingreso_real',   
-                DB::raw('COUNT(pp.id_compra) as consumo_count')
+                'fr.hora_ingreso_real'
             )
             ->groupBy(
                 'fr.id_estadia',
@@ -110,14 +108,13 @@ class FactRegistroClienteController extends Controller
     public function create()
     {
         $metodos = DimMetPago::orderBy('id_met_pago')->get();
-        $productos = DimProductoBodega::orderBy('nombre')->get();
         $habitaciones = [
             201, 202, 203, 204, 205, 206, 207, 208, 209, 210,
             301, 302, 303, 304, 305, 306, 307, 308, 309, 310,
             401, 402, 403, 404, 405, 406, 407, 408, 409, 410
         ];
 
-        return view('registros.create', compact('metodos', 'productos', 'habitaciones'));
+        return view('registros.create', compact('metodos', 'habitaciones'));
     }
 
     public function update(Request $request, $id)
@@ -203,11 +200,6 @@ class FactRegistroClienteController extends Controller
                 'pagos.*.monto' => 'nullable|numeric|min:0',
                 'monto_individual' => 'nullable|numeric|min:0',
                 'monto_boleta' => 'nullable|numeric|min:0',
-                'consumo.*.id_prod_bod' => 'nullable|exists:dim_productos_bodega,id_prod_bod',
-                'consumo.*.cantidad' => 'nullable|integer|min:1',
-                'consumo.*.precio_unitario' => 'nullable|numeric|min:0',
-                'consumo.*.id_met_pago' => 'nullable|exists:dim_met_pago,id_met_pago',
-                'consumo.*.comprobante' => 'nullable|in:SI,NO',  
             ]);
 
             \Log::info('Validación pasó correctamente');
@@ -253,7 +245,7 @@ class FactRegistroClienteController extends Controller
                 $ph->save();
             }
 
-            // 4) Pagos adicionales
+            /* 4) Pagos adicionales
             $pagos = $request->input('pagos', []);
             foreach ($pagos as $pago) {
                 if (!empty($pago['id_met_pago']) && !empty($pago['monto'])) {
@@ -264,24 +256,36 @@ class FactRegistroClienteController extends Controller
                     $ph->boleta = $request->input('boleta') === 'SI' ? 'SI' : 'NO';
                     $ph->save();
                 }
-            }
+            } */
 
-            // 5) Consumos
-            $consumos = $request->input('consumo', []);
-            foreach ($consumos as $linea) {
-                if (!empty($linea['id_prod_bod']) && !empty($linea['cantidad']) && 
-                    isset($linea['precio_unitario']) && !empty($linea['id_met_pago'])) {
+
+
+
+
+            // 4) Pagos adicionales
+            \Log::info('=== PROCESANDO PAGOS ADICIONALES ===');
+            $pagos = $request->input('pagos', []);
+            \Log::info('Array de pagos recibido:', ['pagos' => $pagos, 'count' => count($pagos)]);
+
+            foreach ($pagos as $index => $pago) {
+                \Log::info("Iterando pago índice {$index}:", $pago);
+                
+                if (!empty($pago['id_met_pago']) && !empty($pago['monto'])) {
+                    \Log::info("✅ Pago {$index} válido - Guardando...");
                     
-                    $fp = new FactPagoProd();
-                    $fp->id_estadia = $fr->id_estadia;
-                    $fp->id_prod_bod = $linea['id_prod_bod'];
-                    $fp->cantidad = $linea['cantidad'];
-                    $fp->precio_unitario = $linea['precio_unitario'];
-                    $fp->id_met_pago = $linea['id_met_pago'];
-                    $fp->comprobante = $linea['comprobante'] ?? 'NO';
-                    $fp->save();
+                    $ph = new FactPagoHab();
+                    $ph->id_estadia = $fr->id_estadia;
+                    $ph->id_met_pago = $pago['id_met_pago'];
+                    $ph->monto = $pago['monto'];
+                    $ph->boleta = $request->input('boleta') === 'SI' ? 'SI' : 'NO';
+                    $ph->save();
+                    
+                    \Log::info("✅ Pago guardado con ID: {$ph->id_pago}");
+                } else {
+                    \Log::warning("❌ Pago {$index} rechazado - Vacío o inválido");
                 }
             }
+            \Log::info('=== FIN PROCESAMIENTO PAGOS ADICIONALES ===');
 
             DB::commit();
             \Log::info('Registro guardado exitosamente');
@@ -297,42 +301,6 @@ class FactRegistroClienteController extends Controller
             \Log::error('Error general:', ['message' => $e->getMessage()]);
             return back()->withErrors('Error: ' . $e->getMessage())->withInput();
         }
-    }
-
-    /**
-     * VER Y EDITAR CONSUMOS (reemplaza el método actual)
-     * URL: GET /registros/{id}/consumo
-     */
-    public function consumo($id)
-    {
-        $estadia = FactRegistroCliente::findOrFail($id);
-
-        // Obtener información básica del cliente
-        $cliente = DimRegistroCliente::where('doc_identidad', $estadia->doc_identidad)->first();
-
-        // Obtener todos los consumos con información completa
-        $consumos = DB::table('fact_pago_prod as pp')
-            ->join('dim_productos_bodega as p', 'p.id_prod_bod', '=', 'pp.id_prod_bod')
-            ->join('dim_met_pago as mp', 'mp.id_met_pago', '=', 'pp.id_met_pago')
-            ->select(
-                'pp.id_compra',
-                'pp.id_prod_bod',
-                'p.nombre as producto',
-                'pp.cantidad',
-                'pp.precio_unitario',
-                'pp.id_met_pago',
-                'mp.met_pago as metodo',
-                'pp.comprobante', 
-                DB::raw('(pp.cantidad * pp.precio_unitario) as total')
-            )
-            ->where('pp.id_estadia', '=', $id)
-            ->get();
-
-        // Obtener productos disponibles para agregar nuevos consumos
-        $productos = DimProductoBodega::orderBy('nombre')->get();
-        $metodos = DimMetPago::orderBy('id_met_pago')->get();
-
-        return view('registros.consumo-edit', compact('estadia', 'cliente', 'consumos', 'productos', 'metodos'));
     }
 
     /**
@@ -369,104 +337,6 @@ class FactRegistroClienteController extends Controller
                 'ok' => false,
                 'message' => 'Error: ' . $e->getMessage()
             ], 500);
-        }
-    }
-
-    /**
-     * AGREGAR NUEVO CONSUMO
-     * URL: POST /registros/{id}/consumo
-     */
-    public function storeConsumo(Request $request, $id)
-    {
-        $request->validate([
-            'id_prod_bod' => 'required|exists:dim_productos_bodega,id_prod_bod',
-            'cantidad' => 'required|integer|min:1|max:999',
-            'precio_unitario' => 'required|numeric|min:0.01|max:99999.99',
-            'id_met_pago' => 'required|exists:dim_met_pago,id_met_pago',
-            'comprobante' => 'nullable|in:SI,NO', 
-        ]);
-
-        try {
-            // Verificar que la estadía existe
-            $estadia = FactRegistroCliente::findOrFail($id);
-
-            $consumo = new FactPagoProd();
-            $consumo->id_estadia = $id;
-            $consumo->id_prod_bod = $request->input('id_prod_bod');
-            $consumo->cantidad = $request->input('cantidad');
-            $consumo->precio_unitario = $request->input('precio_unitario');
-            $consumo->id_met_pago = $request->input('id_met_pago');
-            $consumo->comprobante = $request->input('comprobante', 'NO');
-            $consumo->save();
-
-            return redirect()->route('registros.consumo', $id)
-                ->with('success', 'Consumo agregado correctamente.');
-
-        } catch (\Exception $e) {
-            return back()->withErrors('Error al agregar consumo: ' . $e->getMessage())->withInput();
-        }
-    }
-
-    /**
-     * ACTUALIZAR CONSUMO EXISTENTE
-     * URL: PUT /registros/{id}/consumo/{consumoId}
-     */
-    public function updateConsumo(Request $request, $id, $consumoId)
-    {
-        $request->validate([
-            'cantidad' => 'required|integer|min:1|max:999',
-            'precio_unitario' => 'required|numeric|min:0.01|max:99999.99',
-            'id_met_pago' => 'required|exists:dim_met_pago,id_met_pago',
-            'comprobante' => 'nullable|in:SI,NO',
-        ]);
-
-        try {
-            $consumo = FactPagoProd::where('id_compra', $consumoId)
-                                ->where('id_estadia', $id)
-                                ->firstOrFail();
-            $consumo->cantidad = $request->input('cantidad');
-            $consumo->precio_unitario = $request->input('precio_unitario');
-            $consumo->id_met_pago = $request->input('id_met_pago');
-            $consumo->comprobante = $request->input('comprobante', 'NO');
-            $consumo->save();
-
-            return redirect()->route('registros.consumo', $id)
-                ->with('success', 'Consumo actualizado correctamente.');
-
-        } catch (\Exception $e) {
-            return back()->withErrors('Error al actualizar consumo: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * ELIMINAR CONSUMO - ✅ CORREGIDO
-     * URL: DELETE /registros/{id}/consumo/{consumoId}
-     */
-    public function destroyConsumo($id, $consumoId)
-    {
-        try {
-            // Obtener nombre del producto antes de eliminar
-            $consumoData = DB::table('fact_pago_prod as pp')
-                ->join('dim_productos_bodega as p', 'p.id_prod_bod', '=', 'pp.id_prod_bod')
-                ->select('p.nombre as producto_nombre')
-                ->where('pp.id_compra', $consumoId)
-                ->where('pp.id_estadia', $id)
-                ->first();
-
-            if (!$consumoData) {
-                return back()->withErrors('Consumo no encontrado.');
-            }
-
-            // Eliminar el consumo
-            FactPagoProd::where('id_compra', $consumoId)
-                    ->where('id_estadia', $id)
-                    ->delete();
-
-            return redirect()->route('registros.consumo', $id)
-                ->with('success', "Consumo eliminado: {$consumoData->producto_nombre}");
-
-        } catch (\Exception $e) {
-            return back()->withErrors('Error al eliminar consumo: ' . $e->getMessage());
         }
     }
 

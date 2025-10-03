@@ -10,17 +10,19 @@ class FactPagoProd extends Model
     protected $primaryKey = 'id_compra';
     public $timestamps = false;
 
-    // ✅ CAMPOS PERMITIDOS PARA ASIGNACIÓN MASIVA
+    // ✅ CAMPOS ACTUALIZADOS PARA ASIGNACIÓN MASIVA
     protected $fillable = [
         'id_estadia',
         'id_prod_bod',
         'cantidad',
-        'precio_unitario',
+        'precio_unitario', // Se llenará automáticamente desde producto
         'id_met_pago',
-        'comprobante' // ✅ NUEVO CAMPO AGREGADO
+        'comprobante',
+        'fecha_venta',    
+        'turno'          
     ];
 
-    // ✅ RELACIONES EXISTENTES
+    // ✅ RELACIONES
     public function estadia()
     {
         return $this->belongsTo(FactRegistroCliente::class, 'id_estadia', 'id_estadia');
@@ -36,8 +38,8 @@ class FactPagoProd extends Model
         return $this->belongsTo(DimMetPago::class, 'id_met_pago', 'id_met_pago');
     }
 
-    // ✅ ACCESSORS ÚTILES PARA LA VISTA
-    
+    // ✅ ACCESSORS
+
     /**
      * Calcular el total (cantidad × precio unitario)
      */
@@ -47,7 +49,7 @@ class FactPagoProd extends Model
     }
 
     /**
-     * Obtener el nombre del producto de forma rápida
+     * Obtener el nombre del producto
      */
     public function getProductoNombreAttribute()
     {
@@ -55,7 +57,7 @@ class FactPagoProd extends Model
     }
 
     /**
-     * Obtener el método de pago de forma rápida
+     * Obtener el método de pago
      */
     public function getMetPagoAttribute()
     {
@@ -71,17 +73,68 @@ class FactPagoProd extends Model
     }
 
     /**
-     * Obtener el total formateado para mostrar
+     * Obtener el total formateado
      */
     public function getTotalFormateadoAttribute()
     {
         return 'S/ ' . number_format($this->total, 2);
     }
 
-    // ✅ SCOPES ÚTILES PARA CONSULTAS
+    /**
+     * Obtener nombre del turno
+     */
+    public function getTurnoNombreAttribute()
+    {
+        return $this->turno == 0 ? 'DÍA' : 'NOCHE';
+    }
 
     /**
-     * Scope para obtener solo consumos con comprobante
+     * Obtener fecha formateada
+     */
+    public function getFechaFormateadaAttribute()
+    {
+        return \Carbon\Carbon::parse($this->fecha_venta)->format('d/m/Y');
+    }
+
+    // ✅ SCOPES
+
+    /**
+     * Scope para filtrar por turno
+     */
+    public function scopePorTurno($query, $turno)
+    {
+        if ($turno !== null && $turno !== '') {
+            return $query->where('turno', $turno);
+        }
+        return $query;
+    }
+
+    /**
+     * Scope para filtrar por fecha
+     */
+    public function scopePorFecha($query, $fecha)
+    {
+        return $query->whereDate('fecha_venta', $fecha);
+    }
+
+    /**
+     * Scope para filtrar por rango de fechas
+     */
+    public function scopePorRangoFechas($query, $fechaInicio, $fechaFin)
+    {
+        return $query->whereBetween('fecha_venta', [$fechaInicio, $fechaFin]);
+    }
+
+    /**
+     * Scope para ventas de bodega (sin cliente asociado)
+     */
+    public function scopeVentasBodega($query)
+    {
+        return $query->whereNull('id_estadia');
+    }
+
+    /**
+     * Scope con comprobante
      */
     public function scopeConComprobante($query)
     {
@@ -89,7 +142,7 @@ class FactPagoProd extends Model
     }
 
     /**
-     * Scope para obtener solo consumos sin comprobante
+     * Scope sin comprobante
      */
     public function scopeSinComprobante($query)
     {
@@ -97,15 +150,7 @@ class FactPagoProd extends Model
     }
 
     /**
-     * Scope para obtener consumos de una estadía específica
-     */
-    public function scopeDeEstadia($query, $idEstadia)
-    {
-        return $query->where('id_estadia', $idEstadia);
-    }
-
-    /**
-     * Scope para obtener consumos por método de pago
+     * Scope por método de pago
      */
     public function scopePorMetodoPago($query, $idMetodoPago)
     {

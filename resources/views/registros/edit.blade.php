@@ -180,11 +180,6 @@
                 Volver a registros
             </a>
             <span>•</span>
-            <a href="{{ route('registros.consumo', $estadia->id_estadia) }}" 
-               class="inline-flex items-center nav-link-blue transition-colors">
-                <i class='bx bx-receipt mr-1'></i>
-                Ver consumos de esta estadía
-            </a>
         </div>
     </div>
 
@@ -465,12 +460,6 @@
                     <i class='bx bx-x mr-2'></i>
                     Cancelar
                 </a>
-                
-                <a href="{{ route('registros.consumo', $estadia->id_estadia) }}" 
-                   class="inline-flex items-center nav-link-blue text-sm font-medium">
-                    <i class='bx bx-receipt mr-1'></i>
-                    Ver consumos de esta estadía
-                </a>
             </div>
             
             <button type="submit" 
@@ -490,7 +479,6 @@
                 <ul class="list-disc list-inside space-y-1">
                     <li>Para cambios en el nombre del cliente, ve a la sección "Clientes"</li>
                     <li>El documento de identidad sí se puede modificar para corregir errores</li>
-                    <li>Los consumos adicionales se gestionan por separado</li>
                 </ul>
             </div>
         </div>

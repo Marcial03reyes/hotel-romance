@@ -140,9 +140,11 @@
                 <thead class="bg-gradient-to-r from-blue-600 to-blue-800 text-white sticky top-0 z-10" style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));">
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Producto</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Precio Venta</th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Unidades Compradas</th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Unidades Vendidas</th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Stock Actual</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Gestión</th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
@@ -155,6 +157,10 @@
                             
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="badge badge-producto font-medium">{{ $producto->nombre }}</span>
+                            </td>
+
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-semibold text-gray-900">S/ {{ number_format($producto->precio_actual ?? 0, 2) }}</div>
                             </td>
                             
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -175,33 +181,49 @@
                                 <span class="badge {{ $badgeClass }}">{{ $stock }} unidades</span>
                             </td>
                             
+                            <!-- GESTIÓN (Historial + Comprar) -->
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" onclick="event.stopPropagation();">
                                 <div class="flex items-center space-x-2">
                                     <a href="{{ route('productos-bodega.historial', $producto->id_prod_bod) }}"
-                                       class="inline-flex items-center bg-blue-100 text-blue-700 px-3 py-1 text-xs rounded-full hover:bg-blue-200 transition-colors">
+                                    class="inline-flex items-center bg-blue-100 text-blue-700 px-3 py-1 text-xs rounded-full hover:bg-blue-200 transition-colors">
                                         <i class='bx bx-history mr-1'></i>
                                         Historial
                                     </a>
-
-                                    <!-- BOTÓN EDITAR (NUEVO) -->
-                                    <a href="{{ route('productos-bodega.edit-producto', $producto->id_prod_bod) }}"
-                                        class="inline-flex items-center bg-yellow-100 text-yellow-700 px-3 py-1 text-xs rounded-full hover:bg-yellow-200 transition-colors"
-                                        title="Editar nombre del producto">
-                                        <i class='bx bx-edit mr-1'></i>
-                                        Editar
-                                    </a>
                                     
                                     <a href="{{ route('productos-bodega.create-compra', $producto->id_prod_bod) }}"
-                                       class="inline-flex items-center bg-green-100 text-green-700 px-3 py-1 text-xs rounded-full hover:bg-green-200 transition-colors">
+                                    class="inline-flex items-center bg-green-100 text-green-700 px-3 py-1 text-xs rounded-full hover:bg-green-200 transition-colors">
                                         <i class='bx bx-plus mr-1'></i>
                                         Comprar
                                     </a>
                                 </div>
                             </td>
+
+                            <!-- ACCIONES (Editar + Eliminar) -->
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" onclick="event.stopPropagation();">
+                                <div class="flex items-center space-x-2">
+                                    <a href="{{ route('productos-bodega.edit-producto', $producto->id_prod_bod) }}"
+                                        class="inline-flex items-center bg-yellow-100 text-yellow-700 px-3 py-1 text-xs rounded-full hover:bg-yellow-200 transition-colors">
+                                        <i class='bx bx-edit mr-1'></i>
+                                        Editar
+                                    </a>
+                                    
+                                    <form method="POST" action="{{ route('productos-bodega.destroy-producto', $producto->id_prod_bod) }}" 
+                                        onsubmit="return confirm('¿Estás seguro de eliminar este producto? Solo se puede eliminar si no tiene compras ni ventas.')" 
+                                        class="inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="inline-flex items-center bg-red-100 text-red-700 px-3 py-1 text-xs rounded-full hover:bg-red-200 transition-colors">
+                                            <i class='bx bx-trash mr-1'></i>
+                                            Eliminar
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                            <td colspan="7" class="px-6 py-12 text-center text-gray-500">
                                 <div class="flex flex-col items-center">
                                     <i class='bx bx-package text-6xl text-gray-300 mb-4'></i>
                                     <span class="text-lg">No hay productos registrados aún.</span>

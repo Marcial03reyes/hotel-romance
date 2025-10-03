@@ -93,12 +93,6 @@ Route::middleware('auth')->group(function () {
         Route::get('{id}/edit', [FactRegistroClienteController::class, 'edit'])->name('edit');
         Route::put('{id}', [FactRegistroClienteController::class, 'update'])->name('update');
         
-        // ✅ RUTAS DE CONSUMO (ORDENADAS POR ESPECIFICIDAD)
-        Route::get('{id}/consumo', [FactRegistroClienteController::class, 'consumo'])->name('consumo');
-        Route::post('{id}/consumo', [FactRegistroClienteController::class, 'storeConsumo'])->name('consumo.store');
-        Route::put('{id}/consumo/{consumoId}', [FactRegistroClienteController::class, 'updateConsumo'])->name('consumo.update');
-        Route::delete('{id}/consumo/{consumoId}', [FactRegistroClienteController::class, 'destroyConsumo'])->name('consumo.destroy');
-        
         // ✅ ELIMINAR ESTADÍA (AL FINAL para evitar conflictos)
         Route::delete('{id}', [FactRegistroClienteController::class, 'destroy'])->name('destroy');
     });
@@ -223,6 +217,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     
     // PAGOS DE PRODUCTOS
     Route::resource('pagos-productos', FactPagoProdController::class);
+
+    Route::get('api/productos/{id}/precio', [FactPagoProdController::class, 'getPrecioProducto']);
 
     /*
     |----------------------------------------------------------------------

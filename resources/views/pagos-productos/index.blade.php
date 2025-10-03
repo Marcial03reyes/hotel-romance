@@ -1,21 +1,21 @@
 @extends('layouts.app')
 
-@section('title', 'Registros - Hotel Romance')
+@section('title', 'Registro de Bodega - Hotel Romance')
 
 @section('content')
 
 <style>
     /* Paleta de colores azul Hotel Romance */
     :root {
-        --primary-color: #88A6D3;      /* Azul principal */
-        --secondary-color: #6B8CC7;    /* Azul secundario más oscuro */
-        --tertiary-color: #A5BFDB;     /* Azul terciario más claro */
-        --accent-color: #4A73B8;       /* Azul de acento oscuro */
-        --light-blue: #C8D7ED;         /* Azul muy claro */
-        --sidebar-bg: #f4f8fc;         /* Fondo sidebar azul muy suave */
-        --hover-bg: #88A6D3;           /* Color hover */
-        --gradient-start: #88A6D3;     /* Inicio gradiente */
-        --gradient-end: #6B8CC7;       /* Fin gradiente */
+        --primary-color: #88A6D3;
+        --secondary-color: #6B8CC7;
+        --tertiary-color: #A5BFDB;
+        --accent-color: #4A73B8;
+        --light-blue: #C8D7ED;
+        --sidebar-bg: #f4f8fc;
+        --hover-bg: #88A6D3;
+        --gradient-start: #88A6D3;
+        --gradient-end: #6B8CC7;
     }
 
     .table-container {
@@ -54,21 +54,6 @@
         font-weight: 500;
     }
     
-    .badge-habitacion {
-        background-color: #e8f2ff;
-        color: var(--accent-color);
-    }
-    
-    .badge-si {
-        background-color: #dcfce7;
-        color: #166534;
-    }
-    
-    .badge-no {
-        background-color: #f3f4f6;
-        color: #374151;
-    }
-
     .badge-turno-dia {
         background-color: #fef3c7;
         color: #d97706;
@@ -79,44 +64,29 @@
         color: #1d4ed8;
     }
 
-    /* Estadísticas con colores azules */
-    .stats-total {
-        color: var(--secondary-color);
+    .badge-comprobante-si {
+        background-color: #dcfce7;
+        color: #166534;
     }
 
-    .stats-boleta {
-        color: var(--accent-color);
+    .badge-comprobante-no {
+        background-color: #f3f4f6;
+        color: #374151;
     }
 
-    /* Checkbox personalizado */
-    .checkbox-romance {
-        accent-color: var(--primary-color);
+    .stats-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
     }
 
-    /* Barra de acciones */
-    .action-bar-edit {
-        background-color: var(--primary-color);
+    .stats-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(136, 166, 211, 0.2);
     }
 
-    .action-bar-edit:hover {
-        background-color: var(--secondary-color);
-    }
-
-    /* Tabla header gradiente azul */
     .table-header {
         background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
-    }
-
-    /* Hover en filas con borde azul */
-    .table-row:hover {
-        border-left-color: var(--primary-color) !important;
-    }
-
-    .fecha-real-indicator {
-        font-size: 0.65rem;
-        color: #2563eb;
-        font-style: italic;
-        margin-top: 2px;
     }
 </style>
 
@@ -125,13 +95,13 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">Registro de Habitaciones</h1>
-            <p class="text-gray-600">Gestiona los registros de huéspedes del Hotel Romance</p>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Registro de Bodega</h1>
+            <p class="text-gray-600">Gestiona las ventas de productos por día y turno</p>
         </div>
-        <a href="{{ route('registros.create') }}"
+        <a href="{{ route('pagos-productos.create') }}"
            class="btn-romance text-white px-6 py-3 rounded-lg font-medium shadow-lg">
             <i class='bx bx-plus mr-2'></i>
-            Agregar registro
+            Agregar venta
         </a>
     </div>
 
@@ -162,8 +132,8 @@
     <!-- Barra de filtros y estadísticas -->
     <div class="mb-6 grid grid-cols-1 lg:grid-cols-12 gap-4">
         <!-- Filtros de fecha -->
-        <div class="lg:col-span-7">
-            <form method="GET" action="{{ route('registros.index') }}" id="filtroForm" class="flex flex-wrap gap-4 items-end">
+        <div class="lg:col-span-5">
+            <form method="GET" action="{{ route('pagos-productos.index') }}" id="filtroForm" class="flex flex-wrap gap-4 items-end">
                 <!-- Botones de período rápido -->
                 <div class="flex gap-2">
                     <button type="submit" name="filtro" value="hoy"
@@ -205,14 +175,30 @@
                 </div>
             </form>
         </div>
+
+        <!-- Filtro de turno -->
+        <div class="lg:col-span-2">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Turno</label>
+            <form method="GET" action="{{ route('pagos-productos.index') }}" id="turnoForm">
+                <input type="hidden" name="filtro" value="{{ request('filtro', 'todos') }}">
+                <input type="hidden" name="fecha_inicio" value="{{ request('fecha_inicio') }}">
+                <input type="hidden" name="fecha_fin" value="{{ request('fecha_fin') }}">
+                <select name="turno" onchange="this.form.submit()"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Todos</option>
+                    <option value="0" {{ request('turno') === '0' ? 'selected' : '' }}>DÍA</option>
+                    <option value="1" {{ request('turno') === '1' ? 'selected' : '' }}>NOCHE</option>
+                </select>
+            </form>
+        </div>
         
-        <!-- Búsqueda reducida -->
-        <div class="lg:col-span-3">
+        <!-- Búsqueda -->
+        <div class="lg:col-span-2">
             <label class="block text-xs font-medium text-gray-600 mb-1">Buscar</label>
             <div class="relative">
                 <input type="search" id="searchInput"
                     class="search-input w-full pl-10 pr-4 py-2 text-sm rounded-lg border-2 border-gray-200 focus:outline-none transition-all"
-                    placeholder="Nombre, documento...">
+                    placeholder="Producto...">
                 <div class="absolute top-0 left-0 inline-flex items-center p-2">
                     <i class='bx bx-search text-gray-400'></i>
                 </div>
@@ -220,14 +206,14 @@
         </div>
         
         <!-- Estadísticas compactas -->
-        <div class="lg:col-span-2 grid grid-cols-2 gap-2">
-            <div class="bg-white rounded-lg border p-3 text-center">
-                <div class="text-lg font-bold stats-total">{{ count($registros) }}</div>
-                <div class="text-xs text-gray-600">Total</div>
+        <div class="lg:col-span-3 grid grid-cols-2 gap-2">
+            <div class="stats-card rounded-lg p-3 text-center">
+                <div class="text-lg font-bold text-gray-800">{{ $estadisticas['total_ventas'] }}</div>
+                <div class="text-xs text-gray-600">Ventas</div>
             </div>
-            <div class="bg-white rounded-lg border p-3 text-center">
-                <div class="text-lg font-bold stats-boleta">{{ $registros->where('boleta', 'SI')->count() }}</div>
-                <div class="text-xs text-gray-600">C/Boleta</div>
+            <div class="stats-card rounded-lg p-3 text-center">
+                <div class="text-lg font-bold text-green-600">S/ {{ number_format($estadisticas['total_ingresos'], 2) }}</div>
+                <div class="text-xs text-gray-600">Ingresos</div>
             </div>
         </div>
     </div>
@@ -239,41 +225,33 @@
                 <thead class="table-header text-white sticky top-0 z-10">
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Acciones</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Fecha Ingreso</th> 
-                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Habitación</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Fecha</th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Turno</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Hora Ingreso</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Hora Salida</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Nombres y Apellidos</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Documento</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Fecha Nacimiento</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">E.C</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Lugar</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Precio</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Método</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Boleta</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">OBS</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Producto</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Cantidad</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Precio Unit.</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Total</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Método Pago</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Comprobante</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200" id="tableBody">
-
-
-                    @forelse($registros as $r)
-                        <tr class="table-row border-l-4 border-transparent hover:border-blue-400" data-search="{{ strtolower($r->nombre_apellido . ' ' . $r->doc_identidad . ' ' . $r->habitacion . ' ' . $r->metodo_pago) }}">
-                            <!-- ACCIONES (primera posición) -->
+                    @forelse($ventas as $venta)
+                        <tr class="table-row border-l-4 border-transparent hover:border-blue-400" 
+                            data-search="{{ strtolower($venta->producto_nombre) }}">
+                            
+                            <!-- ACCIONES -->
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center space-x-2">
-                                    <!-- Botón de editar -->
-                                    <a href="{{ route('registros.edit', $r->id_estadia) }}"
-                                    class="inline-flex items-center bg-blue-100 text-blue-700 px-3 py-1 text-xs rounded-full hover:bg-blue-200 transition-colors">
+                                    <a href="{{ route('pagos-productos.edit', $venta->id_compra) }}"
+                                       class="inline-flex items-center bg-blue-100 text-blue-700 px-3 py-1 text-xs rounded-full hover:bg-blue-200 transition-colors">
                                         <i class='bx bx-edit mr-1'></i>
                                         Editar
                                     </a>
                                     
-                                    <!-- Botón de eliminar -->
-                                    <form method="POST" action="{{ route('registros.destroy', $r->id_estadia) }}" 
-                                        onsubmit="return confirm('¿Estás seguro de eliminar este registro? Esta acción no se puede deshacer.')" 
-                                        class="inline">
+                                    <form method="POST" action="{{ route('pagos-productos.destroy', $venta->id_compra) }}" 
+                                          onsubmit="return confirm('¿Eliminar esta venta?')" 
+                                          class="inline">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit"
@@ -285,107 +263,58 @@
                                 </div>
                             </td>
 
-                            <!-- FECHA INGRESO --> 
+                            <!-- FECHA -->
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                @if($r->fecha_ingreso_real)
-                                    {{ \Carbon\Carbon::parse($r->fecha_ingreso_real)->format('d/m/Y') }}
-                                @else
-                                    {{ \Carbon\Carbon::parse($r->fecha_ingreso)->format('d/m/Y') }}
-                                @endif
-                            </td>
-
-                            <!-- HABITACIÓN -->
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="badge badge-habitacion">{{ $r->habitacion }}</span>
+                                {{ $venta->fecha_formateada }}
                             </td>
 
                             <!-- TURNO -->
                             <td class="px-6 py-4 whitespace-nowrap">
-                                @if(isset($r->turno))
-                                    <span class="badge {{ $r->turno == 0 ? 'badge-turno-dia' : 'badge-turno-noche' }}">
-                                        <i class='bx {{ $r->turno == 0 ? "bx-sun" : "bx-moon" }} mr-1'></i>
-                                        {{ $r->turno == 0 ? 'DÍA' : 'NOCHE' }}
-                                    </span>
-                                @else
-                                    <span class="badge badge-no">-</span>
-                                @endif
-                            </td>
-
-                            <!-- HORA INGRESO -->
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                @if($r->hora_ingreso_real)
-                                    {{ \Carbon\Carbon::createFromFormat('H:i:s', $r->hora_ingreso_real)->format('h:i A') }}
-                                @else
-                                    {{ \Carbon\Carbon::createFromFormat('H:i:s', $r->hora_ingreso)->format('h:i A') }}
-                                @endif
-                            </td>
-
-                            <!-- HORA SALIDA -->
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                @if($r->hora_salida)
-                                    {{ \Carbon\Carbon::createFromFormat('H:i:s', $r->hora_salida)->format('h:i A') }}
-                                @else
-                                    <span class="text-gray-400 italic">Sin registrar</span>
-                                @endif
-                            </td>
-
-                            <!-- NOMBRES Y APELLIDOS -->
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">{{ $r->nombre_apellido }}</div>
-                            </td>
-
-                            <!-- DOCUMENTO -->
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-mono">
-                                {{ $r->doc_identidad }}
-                            </td>
-
-                            <!-- FECHA NACIMIENTO -->
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                {{ $r->fecha_nacimiento ? \Carbon\Carbon::parse($r->fecha_nacimiento)->format('d/m/Y') : '-' }}
-                            </td>
-
-                            <!-- E.C -->
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                {{ $r->estado_civil ?? '-' }}
-                            </td>
-
-                            <!-- LUGAR -->
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                {{ $r->lugar_nacimiento ?? '-' }}
-                            </td>
-
-                            <!-- PRECIO -->
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                                S/ {{ number_format($r->precio ?? 0, 2) }}
-                            </td>
-
-                            <!-- MÉTODO -->
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                {{ $r->metodo_pago }}
-                            </td>
-
-                            <!-- BOLETA -->
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="badge {{ $r->boleta === 'SI' ? 'badge-si' : 'badge-no' }}">
-                                    {{ $r->boleta }}
+                                <span class="badge {{ $venta->turno == 0 ? 'badge-turno-dia' : 'badge-turno-noche' }}">
+                                    <i class='bx {{ $venta->turno == 0 ? "bx-sun" : "bx-moon" }} mr-1'></i>
+                                    {{ $venta->turno_nombre }}
                                 </span>
                             </td>
 
-                            <!-- OBS -->
+                            <!-- PRODUCTO -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ $venta->producto_nombre }}</div>
+                            </td>
+
+                            <!-- CANTIDAD -->
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center font-semibold">
+                                {{ $venta->cantidad }}
+                            </td>
+
+                            <!-- PRECIO UNITARIO -->
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                S/ {{ number_format($venta->precio_unitario, 2) }}
+                            </td>
+
+                            <!-- TOTAL -->
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
+                                S/ {{ number_format($venta->total, 2) }}
+                            </td>
+
+                            <!-- MÉTODO PAGO -->
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                {{ $r->obs ? (strlen($r->obs) > 30 ? substr($r->obs, 0, 30) . '...' : $r->obs) : '-' }}
+                                {{ $venta->met_pago }}
+                            </td>
+
+                            <!-- COMPROBANTE -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="badge {{ $venta->comprobante === 'SI' ? 'badge-comprobante-si' : 'badge-comprobante-no' }}">
+                                    {{ $venta->comprobante }}
+                                </span>
                             </td>
                         </tr>
-                    
-                    
-                    
                     @empty
                         <tr>
-                            <td colspan="15" class="px-6 py-12 text-center text-gray-500">
+                            <td colspan="9" class="px-6 py-12 text-center text-gray-500">
                                 <div class="flex flex-col items-center">
-                                    <i class='bx bx-inbox text-6xl text-gray-300 mb-4'></i>
-                                    <span class="text-lg">No hay registros disponibles.</span>
-                                    <p class="text-sm mt-2">Comienza agregando tu primer registro de huésped.</p>
+                                    <i class='bx bx-package text-6xl text-gray-300 mb-4'></i>
+                                    <span class="text-lg">No hay ventas registradas.</span>
+                                    <p class="text-sm mt-2">Comienza agregando tu primera venta de bodega.</p>
                                 </div>
                             </td>
                         </tr>
@@ -424,27 +353,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (personalizadoBtn && fechasPersonalizadas) {
         personalizadoBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            
-            console.log('Botón personalizado clickeado'); // Para debug
-            
-            // Toggle visibility
             fechasPersonalizadas.classList.toggle('hidden');
             
-            // Actualizar apariencia del botón
             if (fechasPersonalizadas.classList.contains('hidden')) {
                 this.classList.remove('bg-blue-600', 'text-white');
                 this.classList.add('bg-gray-100', 'text-gray-700');
-                console.log('Ocultando campos de fecha');
             } else {
                 this.classList.remove('bg-gray-100', 'text-gray-700');
                 this.classList.add('bg-blue-600', 'text-white');
-                console.log('Mostrando campos de fecha');
             }
         });
-    } else {
-        console.log('No se encontraron los elementos necesarios para el filtro personalizado');
-        if (!personalizadoBtn) console.log('personalizadoBtn no encontrado');
-        if (!fechasPersonalizadas) console.log('fechasPersonalizadas no encontrado');
     }
 });
 </script>

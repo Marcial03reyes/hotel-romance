@@ -214,6 +214,13 @@
                         <span class="text-sm">Clientes</span>
                     </a>
                 </li>
+
+                <li class="menu-item group">
+                    <a href="{{ route('pagos-productos.index') }}" class="flex font-semibold items-center py-2 px-4 text-gray-700 rounded-md sidebar-item {{ request()->routeIs('pagos-productos.*') ? 'selected-item' : '' }}">
+                        <i class='bx bx-shopping-bag mr-3 text-lg'></i>
+                        <span class="text-sm">Registro Bodega</span>
+                    </a>
+                </li>
                 
                 <!-- SECCIONES SOLO PARA ADMINISTRADORES -->
                 @if(Auth::user()->isAdmin())

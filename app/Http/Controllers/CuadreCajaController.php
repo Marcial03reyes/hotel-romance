@@ -49,8 +49,10 @@ class CuadreCajaController extends Controller
             ];
         }
 
-        // Llenar ingresos de HOTEL por turno y método
-        $ingresosHotel = DB::table('fact_pago_hab as fph')
+        // ========== INGRESOS DE HOTEL ==========
+        
+        // 1. Pagos de habitación
+        $pagosHabitacion = DB::table('fact_pago_hab as fph')
             ->join('fact_registro_clientes as frc', 'frc.id_estadia', '=', 'fph.id_estadia')
             ->join('dim_met_pago as dmp', 'dmp.id_met_pago', '=', 'fph.id_met_pago')
             ->whereIn('frc.fecha_ingreso', $fechasSeleccionadas)
@@ -63,21 +65,22 @@ class CuadreCajaController extends Controller
             ->groupBy('frc.fecha_ingreso', 'frc.turno', 'dmp.id_met_pago', 'dmp.met_pago')
             ->get();
 
-        foreach ($ingresosHotel as $ingreso) {
-            $fecha = $ingreso->fecha_ingreso;
-            $turno = $ingreso->turno == 0 ? 'dia' : 'noche';
-            $metodo = $this->clasificarMetodoDetallado($ingreso->met_pago);
+        foreach ($pagosHabitacion as $pago) {
+            $fecha = $pago->fecha_ingreso;
+            $turno = $pago->turno == 0 ? 'dia' : 'noche';
+            $metodo = $this->clasificarMetodoDetallado($pago->met_pago);
             
             if (isset($datosPorDias[$fecha])) {
-                $datosPorDias[$fecha]['hotel'][$turno][$metodo] += $ingreso->total;
+                $datosPorDias[$fecha]['hotel'][$turno][$metodo] += $pago->total;
             }
         }
 
-        // Llenar ingresos de BODEGA (usando fecha de ingreso del huésped)
-        $ingresosBodega = DB::table('fact_pago_prod as fpp')
+        // 2. Consumos de clientes (productos consumidos en habitación)
+        $consumosClientes = DB::table('fact_pago_prod as fpp')
             ->join('fact_registro_clientes as frc', 'frc.id_estadia', '=', 'fpp.id_estadia')
             ->join('dim_met_pago as dmp', 'dmp.id_met_pago', '=', 'fpp.id_met_pago')
             ->whereIn('frc.fecha_ingreso', $fechasSeleccionadas)
+            ->whereNotNull('fpp.id_estadia') // Solo consumos de clientes
             ->select(
                 'frc.fecha_ingreso',
                 'frc.turno',
@@ -87,17 +90,45 @@ class CuadreCajaController extends Controller
             ->groupBy('frc.fecha_ingreso', 'frc.turno', 'dmp.id_met_pago', 'dmp.met_pago')
             ->get();
 
-        foreach ($ingresosBodega as $ingreso) {
-            $fecha = $ingreso->fecha_ingreso;
-            $turno = $ingreso->turno == 0 ? 'dia' : 'noche';
-            $metodo = $this->clasificarMetodoDetallado($ingreso->met_pago);
+        foreach ($consumosClientes as $consumo) {
+            $fecha = $consumo->fecha_ingreso;
+            $turno = $consumo->turno == 0 ? 'dia' : 'noche';
+            $metodo = $this->clasificarMetodoDetallado($consumo->met_pago);
             
             if (isset($datosPorDias[$fecha])) {
-                $datosPorDias[$fecha]['bodega'][$turno][$metodo] += $ingreso->total;
+                $datosPorDias[$fecha]['hotel'][$turno][$metodo] += $consumo->total;
             }
         }
 
-        // Llenar GASTOS (distribuir proporcionalmente entre días y turnos)
+        // ========== INGRESOS DE BODEGA ==========
+        
+        // Ventas directas de bodega (sin cliente asociado)
+        $ventasBodega = DB::table('fact_pago_prod as fpp')
+            ->join('dim_met_pago as dmp', 'dmp.id_met_pago', '=', 'fpp.id_met_pago')
+            ->whereIn('fpp.fecha_venta', $fechasSeleccionadas)
+            ->whereNull('fpp.id_estadia') // Solo ventas directas de bodega
+            ->select(
+                'fpp.fecha_venta',
+                'fpp.turno',
+                'dmp.met_pago', 
+                DB::raw('SUM(fpp.cantidad * fpp.precio_unitario) as total')
+            )
+            ->groupBy('fpp.fecha_venta', 'fpp.turno', 'dmp.id_met_pago', 'dmp.met_pago')
+            ->get();
+
+        foreach ($ventasBodega as $venta) {
+            $fecha = $venta->fecha_venta;
+            $turno = $venta->turno == 0 ? 'dia' : 'noche';
+            $metodo = $this->clasificarMetodoDetallado($venta->met_pago);
+            
+            if (isset($datosPorDias[$fecha])) {
+                $datosPorDias[$fecha]['bodega'][$turno][$metodo] += $venta->total;
+            }
+        }
+
+        // ========== GASTOS ==========
+        
+        // Gastos generales
         $gastosGenerales = DB::table('fact_gastos_generales as fgg')
             ->join('dim_met_pago as dmp', 'dmp.id_met_pago', '=', 'fgg.id_met_pago')
             ->join('dim_tipo_gasto as dtg', 'dtg.id_tipo_gasto', '=', 'fgg.id_tipo_gasto')
@@ -226,13 +257,13 @@ class CuadreCajaController extends Controller
 
     private function getDatosDiariosBodega($fechaInicio, $fechaFin)
     {
-        // Ingresos diarios
+        // Ingresos diarios - SOLO ventas directas de bodega
         $ingresos = DB::table('fact_pago_prod as fpp')
-            ->join('fact_registro_clientes as frc', 'frc.id_estadia', '=', 'fpp.id_estadia')
             ->join('dim_met_pago as dmp', 'dmp.id_met_pago', '=', 'fpp.id_met_pago')
-            ->whereBetween('frc.fecha_ingreso', [$fechaInicio, $fechaFin])
-            ->select('frc.fecha_ingreso', 'dmp.met_pago', DB::raw('SUM(fpp.cantidad * fpp.precio_unitario) as total'))
-            ->groupBy('frc.fecha_ingreso', 'dmp.id_met_pago', 'dmp.met_pago')
+            ->whereBetween('fpp.fecha_venta', [$fechaInicio, $fechaFin])
+            ->whereNull('fpp.id_estadia') // Solo ventas directas
+            ->select('fpp.fecha_venta as fecha', 'dmp.met_pago', DB::raw('SUM(fpp.cantidad * fpp.precio_unitario) as total'))
+            ->groupBy('fpp.fecha_venta', 'dmp.id_met_pago', 'dmp.met_pago')
             ->get();
         
         // Gastos diarios: Solo categoría "COMPRAS BODEGA"

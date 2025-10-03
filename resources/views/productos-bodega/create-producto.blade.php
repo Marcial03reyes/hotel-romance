@@ -75,14 +75,14 @@
                         </label>
                         <div class="relative">
                             <input type="text" 
-                                   id="nombre" 
-                                   name="nombre" 
-                                   value="{{ old('nombre') }}"
-                                   maxlength="50"
-                                   class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm @error('nombre') border-red-300 @enderror"
-                                   placeholder="Ej: Pilsen Lata, Agua San Luis, etc."
-                                   required
-                                   autocomplete="off">
+                                id="nombre" 
+                                name="nombre" 
+                                value="{{ old('nombre') }}"
+                                maxlength="50"
+                                class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm @error('nombre') border-red-300 @enderror"
+                                placeholder="Ej: Pilsen Lata, Agua San Luis, etc."
+                                required
+                                autocomplete="off">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <i class='bx bx-package text-gray-400'></i>
                             </div>
@@ -92,6 +92,34 @@
                         @enderror
                         <p class="mt-1 text-xs text-gray-500">
                             Máximo 50 caracteres. El nombre debe ser único.
+                        </p>
+                    </div>
+                    
+                    <!-- Nombre del Producto -->
+                    <div class="mt-6">
+                        <label for="precio_actual" class="block text-sm font-medium text-gray-700 mb-2">
+                            Precio de Venta Actual <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative max-w-xs">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 font-medium">
+                                S/
+                            </span>
+                            <input type="number" 
+                                id="precio_actual" 
+                                name="precio_actual" 
+                                value="{{ old('precio_actual') }}"
+                                step="0.01"
+                                min="0.01"
+                                max="9999.99"
+                                class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm @error('precio_actual') border-red-300 @enderror"
+                                placeholder="0.00"
+                                required>
+                        </div>
+                        @error('precio_actual')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-1 text-xs text-gray-500">
+                            Precio sugerido de venta. Puede modificarse al registrar cada venta.
                         </p>
                     </div>
                 </div>
@@ -106,6 +134,7 @@
                             <h4 class="text-sm font-medium text-blue-800 mb-2">Sobre los productos de bodega</h4>
                             <div class="text-sm text-blue-700 space-y-1">
                                 <p>• Los productos de bodega son aquellos que se venden directamente a los clientes del hotel</p>
+                                <p>• El precio de venta es una sugerencia, se puede ajustar en cada venta</p>
                                 <p>• Una vez creado el producto, podrás registrar compras para mantener el inventario</p>
                                 <p>• El sistema calculará automáticamente el stock basado en compras y ventas</p>
                                 <p>• Puedes editar el nombre del producto después de crearlo</p>
