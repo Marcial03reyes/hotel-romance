@@ -134,55 +134,15 @@
 
 <!-- Resumen de Trabajadores y Gráfico -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-
-    @php
-    // Obtener ingresos por turno de la semana actual
-    $inicioSemana = now()->startOfWeek();
-    $finSemana = now()->endOfWeek();
-
-    $ingresosPorTurno = DB::table('fact_pago_hab as fph')
-        ->join('fact_registro_clientes as frc', 'frc.id_estadia', '=', 'fph.id_estadia')
-        ->whereBetween('frc.fecha_ingreso', [$inicioSemana, $finSemana])
-        ->selectRaw('
-            DAYOFWEEK(frc.fecha_ingreso) as dia_semana,
-            frc.turno,
-            SUM(fph.monto) as total_ingresos
-        ')
-        ->groupBy('dia_semana', 'frc.turno')
-        ->get();
-
-    // Organizar datos para el gráfico
-    $datosTurnos = [];
-    $diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-
-    // Mapeo de números a nombres de turnos (ajusta según tus valores)
-    $mapeoTurnos = [
-        0 => 'Día',
-        1 => 'Noche'
-    ];
-
-    foreach($mapeoTurnos as $numTurno => $nombreTurno) {
-        $datosTurnos[$nombreTurno] = array_fill(0, 7, 0);
-    }
-
-    foreach($ingresosPorTurno as $ingreso) {
-        $indiceDia = $ingreso->dia_semana - 1;
-        $nombreTurno = $mapeoTurnos[$ingreso->turno] ?? 'Desconocido';
-        
-        if(isset($datosTurnos[$nombreTurno])) {
-            $datosTurnos[$nombreTurno][$indiceDia] = (float) $ingreso->total_ingresos;
-        }
-    }
-    @endphp
     
     <!-- Gráfico de Ingresos por Turno -->
     <div class="bg-white border border-gray-100 shadow-md shadow-black/5 p-6 rounded-lg">
         <div class="flex justify-between mb-4 items-start">
             <div class="font-semibold text-lg">Ingresos por Turno</div>
-            <select class="text-sm border border-gray-200 rounded px-3 py-1" style="border-color: #C8D7ED;">
-                <option>Esta Semana</option>
-                <option>Semana Anterior</option>
-                <option>Este Mes</option>
+            <select id="filtro-turnos" class="text-sm border border-gray-200 rounded px-3 py-1" style="border-color: #C8D7ED;">
+                <option value="esta_semana">Esta Semana</option>
+                <option value="semana_anterior">Semana Anterior</option>
+                <option value="este_mes">Este Mes</option>
             </select>
         </div>
         <div class="mt-4">
@@ -194,10 +154,10 @@
     <div class="bg-white border border-gray-100 shadow-md shadow-black/5 p-6 rounded-lg">
         <div class="flex justify-between mb-4 items-start">
             <div class="font-semibold text-lg">Ocupación Semanal</div>
-            <select class="text-sm border border-gray-200 rounded px-3 py-1" style="border-color: #C8D7ED;">
-                <option>Esta Semana</option>
-                <option>Última Semana</option>
-                <option>Este Mes</option>
+            <select id="filtro-ocupacion" class="text-sm border border-gray-200 rounded px-3 py-1" style="border-color: #C8D7ED;">
+                <option value="esta_semana">Esta Semana</option>
+                <option value="semana_anterior">Última Semana</option>
+                <option value="este_mes">Este Mes</option>
             </select>
         </div>
         <div class="mt-4">
@@ -335,29 +295,38 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-
-    // Gráfico de ingresos por turno
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // ===========================================
+    // GRÁFICO DE INGRESOS POR TURNO
+    // ===========================================
     const ctxTurnos = document.getElementById('turnos-chart');
-    if (ctxTurnos) {
-        new Chart(ctxTurnos, {
+    let chartTurnos = null;
+    
+    function crearGraficoTurnos(datos) {
+        if (chartTurnos) {
+            chartTurnos.destroy();
+        }
+        
+        chartTurnos = new Chart(ctxTurnos, {
             type: 'bar',
             data: {
-                labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                labels: datos.labels,
                 datasets: [
-                {
-                    label: 'Día',
-                    data: {!! json_encode(array_values($datosTurnos['Día'] ?? array_fill(0, 7, 0))) !!},
-                    backgroundColor: 'rgba(255, 193, 7, 0.8)',
-                    borderColor: '#FFC107',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Noche',
-                    data: {!! json_encode(array_values($datosTurnos['Noche'] ?? array_fill(0, 7, 0))) !!},
-                    backgroundColor: 'rgba(74, 115, 184, 0.8)',
-                    borderColor: '#4A73B8',
-                    borderWidth: 1
-                }
+                    {
+                        label: 'Día',
+                        data: datos.dia,
+                        backgroundColor: 'rgba(255, 193, 7, 0.8)',
+                        borderColor: '#FFC107',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Noche',
+                        data: datos.noche,
+                        backgroundColor: 'rgba(74, 115, 184, 0.8)',
+                        borderColor: '#4A73B8',
+                        borderWidth: 1
+                    }
                 ]
             },
             options: {
@@ -387,17 +356,46 @@
             }
         });
     }
-
-    // Gráfico de ocupación
-    const ctx = document.getElementById('occupancy-chart');
-    if (ctx) {
-        new Chart(ctx, {
+    
+    // Cargar datos iniciales
+    const datosInicialesTurnos = {
+        labels: {!! json_encode($ingresosPorTurno['labels']) !!},
+        dia: {!! json_encode($ingresosPorTurno['dia']) !!},
+        noche: {!! json_encode($ingresosPorTurno['noche']) !!}
+    };
+    crearGraficoTurnos(datosInicialesTurnos);
+    
+    // Event listener para filtro de turnos
+    document.getElementById('filtro-turnos').addEventListener('change', async function() {
+        const periodo = this.value;
+        
+        try {
+            const response = await fetch(`{{ route('api.dashboard.ingresos-turno') }}?periodo=${periodo}`);
+            const datos = await response.json();
+            crearGraficoTurnos(datos);
+        } catch (error) {
+            console.error('Error al cargar datos de turnos:', error);
+        }
+    });
+    
+    // ===========================================
+    // GRÁFICO DE OCUPACIÓN
+    // ===========================================
+    const ctxOcupacion = document.getElementById('occupancy-chart');
+    let chartOcupacion = null;
+    
+    function crearGraficoOcupacion(datos) {
+        if (chartOcupacion) {
+            chartOcupacion.destroy();
+        }
+        
+        chartOcupacion = new Chart(ctxOcupacion, {
             type: 'line',
             data: {
-                labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                labels: datos.labels,
                 datasets: [{
                     label: 'Habitaciones Ocupadas',
-                    data: [4, 4, 5, 3, 6, 5, 6],
+                    data: datos.ocupacion,
                     borderWidth: 2,
                     fill: true,
                     pointBackgroundColor: '#88A6D3',
@@ -416,7 +414,6 @@
                 scales: {
                     y: {
                         beginAtZero: true,
-                        max: 6,
                         ticks: {
                             stepSize: 1
                         }
@@ -425,5 +422,26 @@
             }
         });
     }
+    
+    // Cargar datos iniciales
+    const datosInicialesOcupacion = {
+        labels: {!! json_encode($ocupacionSemanal['labels']) !!},
+        ocupacion: {!! json_encode($ocupacionSemanal['ocupacion']) !!}
+    };
+    crearGraficoOcupacion(datosInicialesOcupacion);
+    
+    // Event listener para filtro de ocupación
+    document.getElementById('filtro-ocupacion').addEventListener('change', async function() {
+        const periodo = this.value;
+        
+        try {
+            const response = await fetch(`{{ route('api.dashboard.ocupacion') }}?periodo=${periodo}`);
+            const datos = await response.json();
+            crearGraficoOcupacion(datos);
+        } catch (error) {
+            console.error('Error al cargar datos de ocupación:', error);
+        }
+    });
+});
 </script>
 @endpush

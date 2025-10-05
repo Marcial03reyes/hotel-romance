@@ -62,17 +62,16 @@ Route::middleware('auth')->group(function () {
     
     /*
     |----------------------------------------------------------------------
-    | DASHBOARD
+    | DASHBOARD - ✅ USAR CONTROLADOR
     |----------------------------------------------------------------------
     */
-    Route::get('dashboard', function () {
-        $data = [
-            'habitacionesOcupadas' => \App\Models\FactRegistroCliente::whereDate('fecha_ingreso', today())->count(),
-            'gastosMes' => \App\Models\FactGastoGeneral::whereMonth('fecha_gasto', now()->month)->sum('monto'),
-        ];
-        
-        return view('dashboard', $data);
-    })->name('dashboard');
+    Route::get('dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+    
+    // APIs para datos dinámicos del dashboard
+    Route::get('api/dashboard/ingresos-turno', [App\Http\Controllers\DashboardController::class, 'getIngresosTurnoDinamico'])
+        ->name('api.dashboard.ingresos-turno');
+    Route::get('api/dashboard/ocupacion', [App\Http\Controllers\DashboardController::class, 'getOcupacionDinamica'])
+        ->name('api.dashboard.ocupacion');
 
     /*
     |----------------------------------------------------------------------
@@ -99,7 +98,6 @@ Route::middleware('auth')->group(function () {
     
     // ✅ CLIENTES - TODOS pueden acceder
     Route::resource('clientes', DimRegistroClienteController::class);
-    // AGREGAR ESTA RUTA AQUÍ:
     Route::post('/clientes/store-ajax', [FactRegistroClienteController::class, 'storeCliente'])
         ->name('clientes.store-ajax');
 
@@ -121,7 +119,6 @@ Route::middleware('auth')->group(function () {
     |----------------------------------------------------------------------
     */
     
-    // ✅ MANTENER ESTA RUTA PARA COMPATIBILIDAD CON VISTAS EXISTENTES
     Route::get('api/clientes/lookup', function(Request $request) {
         $doc = $request->query('doc');
         
@@ -171,14 +168,32 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     
     // GASTOS FIJOS 
     Route::prefix('gastos-fijos')->name('gastos-fijos.')->group(function () {
-        Route::get('/', [App\Http\Controllers\GastosFijosController::class, 'index'])->name('index');
-        Route::get('create', [App\Http\Controllers\GastosFijosController::class, 'create'])->name('create');
-        Route::post('/', [App\Http\Controllers\GastosFijosController::class, 'store'])->name('store');
-        Route::delete('{gastoFijo}', [App\Http\Controllers\GastosFijosController::class, 'destroy'])->name('destroy');
+        // Lista principal
+        Route::get('/', [GastosFijosController::class, 'index'])->name('index');
         
-        // Funcionalidades específicas
-        Route::post('registrar-pago', [App\Http\Controllers\GastosFijosController::class, 'registrarPago'])->name('registrar-pago');
-        Route::get('pago/{pago}/comprobante', [App\Http\Controllers\GastosFijosController::class, 'verComprobante'])->name('ver-comprobante');
+        // Crear nuevo servicio
+        Route::get('create', [GastosFijosController::class, 'create'])->name('create');
+        Route::post('/', [GastosFijosController::class, 'store'])->name('store');
+        
+        // Editar servicio
+        Route::get('{id}/edit', [GastosFijosController::class, 'edit'])->name('edit');
+        Route::put('{id}', [GastosFijosController::class, 'update'])->name('update');
+        Route::delete('{id}', [GastosFijosController::class, 'destroy'])->name('destroy');
+        
+        // Historial de pagos
+        Route::get('{id}/historial', [GastosFijosController::class, 'historial'])->name('historial');
+        
+        // Registrar nuevo pago
+        Route::get('{id}/pago/create', [GastosFijosController::class, 'createPago'])->name('create-pago');
+        Route::post('{id}/pago', [GastosFijosController::class, 'storePago'])->name('store-pago');
+        
+        // Editar/eliminar pago específico
+        Route::get('{id}/pago/{pagoId}/edit', [GastosFijosController::class, 'editPago'])->name('edit-pago');
+        Route::put('{id}/pago/{pagoId}', [GastosFijosController::class, 'updatePago'])->name('update-pago');
+        Route::delete('{id}/pago/{pagoId}', [GastosFijosController::class, 'destroyPago'])->name('destroy-pago');
+        
+        // Ver comprobante
+        Route::get('{id}/pago/{pagoId}/comprobante', [GastosFijosController::class, 'verComprobante'])->name('ver-comprobante');
     });
 
     // COMPROBANTES SUNAT

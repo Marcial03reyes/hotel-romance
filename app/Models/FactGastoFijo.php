@@ -1,5 +1,4 @@
 <?php
-// app/Models/FactGastoFijo.php
 
 namespace App\Models;
 
@@ -33,25 +32,59 @@ class FactGastoFijo extends Model
     }
 
     /**
-     * Verificar si el servicio está pagado en un mes específico
+     * Obtener todos los pagos ordenados por fecha
      */
-    public function estaPagado(int $mes, int $anio): bool
+    public function getPagosOrdenados()
+    {
+        return $this->pagos()->orderBy('fecha_pago', 'desc')->get();
+    }
+
+    /**
+     * Obtener el último pago realizado
+     */
+    public function getUltimoPago(): ?FactPagoGastoFijo
     {
         return $this->pagos()
-            ->where('mes', $mes)
-            ->where('anio', $anio)
+            ->orderBy('fecha_pago', 'desc')
+            ->first();
+    }
+
+    /**
+     * Verificar si el servicio está pagado en un mes específico
+     */
+    public function estaPagadoEnMes(int $mes, int $anio): bool
+    {
+        return $this->pagos()
+            ->whereMonth('fecha_pago', $mes)
+            ->whereYear('fecha_pago', $anio)
             ->exists();
     }
 
     /**
      * Obtener el pago de un mes específico
      */
-    public function getPago(int $mes, int $anio): ?FactPagoGastoFijo
+    public function getPagoDelMes(int $mes, int $anio): ?FactPagoGastoFijo
     {
         return $this->pagos()
-            ->where('mes', $mes)
-            ->where('anio', $anio)
+            ->whereMonth('fecha_pago', $mes)
+            ->whereYear('fecha_pago', $anio)
             ->first();
+    }
+
+    /**
+     * Obtener total de pagos realizados
+     */
+    public function getTotalPagado(): float
+    {
+        return $this->pagos()->sum('monto_pagado');
+    }
+
+    /**
+     * Obtener cantidad de pagos realizados
+     */
+    public function getCantidadPagos(): int
+    {
+        return $this->pagos()->count();
     }
 
     /**
@@ -60,5 +93,13 @@ class FactGastoFijo extends Model
     public function scopeActivos($query)
     {
         return $query->where('activo', true);
+    }
+
+    /**
+     * Scope para servicios inactivos
+     */
+    public function scopeInactivos($query)
+    {
+        return $query->where('activo', false);
     }
 }
