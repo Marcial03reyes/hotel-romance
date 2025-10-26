@@ -17,25 +17,36 @@ class ProductosBodegaController extends Controller
     public function index()
     {
         try {
-            // Obtener productos con estadísticas calculadas
             $productos = DB::table('dim_productos_bodega as dpb')
-                ->leftJoin('fact_compra_bodega as fcb', 'dpb.id_prod_bod', '=', 'fcb.id_prod_bod')
-                ->leftJoin('fact_pago_prod as fpp', function($join) {
-                    $join->on('dpb.id_prod_bod', '=', 'fpp.id_prod_bod')
-                        ->whereNull('fpp.id_estadia'); // Solo ventas de bodega
-                })
+                ->leftJoin(DB::raw('(
+                    SELECT 
+                        id_prod_bod,
+                        SUM(cantidad) as unidades_compradas,
+                        SUM(cantidad * precio_unitario) as inversion_total,
+                        COUNT(*) as total_compras,
+                        MAX(fecha_compra) as ultima_compra
+                    FROM fact_compra_bodega
+                    GROUP BY id_prod_bod
+                ) as compras'), 'dpb.id_prod_bod', '=', 'compras.id_prod_bod')
+                ->leftJoin(DB::raw('(
+                    SELECT 
+                        id_prod_bod,
+                        SUM(cantidad) as unidades_vendidas
+                    FROM fact_pago_prod
+                    WHERE id_estadia IS NULL
+                    GROUP BY id_prod_bod
+                ) as ventas'), 'dpb.id_prod_bod', '=', 'ventas.id_prod_bod')
                 ->select(
                     'dpb.id_prod_bod',
                     'dpb.nombre',
                     'dpb.precio_actual',
-                    DB::raw('COALESCE(SUM(fcb.cantidad), 0) as unidades_compradas'),
-                    DB::raw('COALESCE(SUM(fpp.cantidad), 0) as unidades_vendidas'),
-                    DB::raw('COALESCE(SUM(fcb.cantidad), 0) - COALESCE(SUM(fpp.cantidad), 0) as stock'),
-                    DB::raw('COALESCE(SUM(fcb.cantidad * fcb.precio_unitario), 0) as inversion_total'),
-                    DB::raw('COUNT(DISTINCT fcb.id_compra_bodega) as total_compras'),
-                    DB::raw('MAX(fcb.fecha_compra) as ultima_compra')
+                    DB::raw('COALESCE(compras.unidades_compradas, 0) as unidades_compradas'),
+                    DB::raw('COALESCE(ventas.unidades_vendidas, 0) as unidades_vendidas'),
+                    DB::raw('COALESCE(compras.unidades_compradas, 0) - COALESCE(ventas.unidades_vendidas, 0) as stock'),
+                    DB::raw('COALESCE(compras.inversion_total, 0) as inversion_total'),
+                    DB::raw('COALESCE(compras.total_compras, 0) as total_compras'),
+                    'compras.ultima_compra'
                 )
-                ->groupBy('dpb.id_prod_bod', 'dpb.nombre', 'dpb.precio_actual')
                 ->orderBy('dpb.nombre')
                 ->get();
             
@@ -90,30 +101,115 @@ class ProductosBodegaController extends Controller
             // Stock actual
             $stockActual = $totalComprado - $totalVendido;
             
-            // === NUEVOS CÁLCULOS ===
-            
-            // 1. ROTACIÓN MENSUAL (Días que dura el stock)
+            // === ROTACIÓN MENSUAL MEJORADA (Días que durará el stock) ===
+            // Inicializar la variable
             $rotacionMensual = null;
-            if ($totalVendido > 0 && $ventas->primera_venta) {
+            
+            // Obtener ventas de diferentes períodos para mejor análisis
+            $ventasUltimos30Dias = DB::table('fact_pago_prod')
+                ->where('id_prod_bod', $id)
+                ->whereNull('id_estadia')
+                ->where('fecha_venta', '>=', now()->subDays(30))
+                ->sum('cantidad');
+            
+            $ventasUltimos90Dias = DB::table('fact_pago_prod')
+                ->where('id_prod_bod', $id)
+                ->whereNull('id_estadia')
+                ->where('fecha_venta', '>=', now()->subDays(90))
+                ->sum('cantidad');
+            
+            // Calcular días de cobertura con lógica mejorada
+            if ($stockActual == 0) {
+                $rotacionMensual = 0; // Sin stock
+            } elseif ($ventasUltimos30Dias > 0) {
+                // Prioridad 1: Usar ventas de los últimos 30 días (más preciso)
+                $ventasDiariasPromedio = $ventasUltimos30Dias / 30;
+                $rotacionMensual = round($stockActual / $ventasDiariasPromedio);
+            } elseif ($ventasUltimos90Dias > 0) {
+                // Prioridad 2: Usar ventas de los últimos 90 días
+                $ventasDiariasPromedio = $ventasUltimos90Dias / 90;
+                $rotacionMensual = round($stockActual / $ventasDiariasPromedio);
+            } elseif ($totalVendido > 0 && $ventas->primera_venta) {
+                // Prioridad 3: Usar todo el histórico
                 $diasTranscurridos = now()->diffInDays($ventas->primera_venta);
                 if ($diasTranscurridos > 0) {
-                    $ventasDiarias = $totalVendido / $diasTranscurridos;
-                    $rotacionMensual = $ventasDiarias > 0 ? round($stockActual / $ventasDiarias) : 'N/A';
+                    $ventasDiariasPromedio = $totalVendido / $diasTranscurridos;
+                    $rotacionMensual = round($stockActual / $ventasDiariasPromedio);
                 }
+            } else {
+                // Si no hay ventas, mostrar "N/A" o un valor alto
+                $rotacionMensual = $stockActual > 0 ? 'Sin ventas' : 0;
             }
             
-            // 2. GANANCIA MENSUAL PROMEDIO
+            // === GANANCIA MENSUAL PROMEDIO MEJORADA ===
+            // Inicializar la variable
             $gananciaMensual = null;
-            if ($totalVendido > 0 && $ventas->primera_venta) {
-                // Precio promedio de venta
-                $precioPromedioVenta = $ingresosTotales / $totalVendido;
+            
+            // Calcular basado en ventas de los últimos 3 meses para mayor precisión
+            $hace3Meses = now()->subMonths(3)->startOfDay();
+            
+            $ventasUltimos3Meses = DB::table('fact_pago_prod')
+                ->where('id_prod_bod', $id)
+                ->whereNull('id_estadia')
+                ->where('fecha_venta', '>=', $hace3Meses)
+                ->selectRaw('
+                    SUM(cantidad) as cantidad_vendida,
+                    SUM(cantidad * precio_unitario) as ingresos
+                ')
+                ->first();
+            
+            // Contar meses distintos con ventas
+            $mesesConVentas = DB::table('fact_pago_prod')
+                ->where('id_prod_bod', $id)
+                ->whereNull('id_estadia')
+                ->where('fecha_venta', '>=', $hace3Meses)
+                ->selectRaw('COUNT(DISTINCT DATE_FORMAT(fecha_venta, "%Y-%m")) as meses')
+                ->value('meses');
+            
+            if ($ventasUltimos3Meses && $ventasUltimos3Meses->cantidad_vendida > 0) {
+                // Precio promedio de venta en los últimos 3 meses
+                $precioPromedioVentaReciente = $ventasUltimos3Meses->ingresos / $ventasUltimos3Meses->cantidad_vendida;
                 
-                // Ganancia total
+                // Obtener el costo promedio de las compras más recientes
+                $comprasRecientes = $historialCompras
+                    ->sortByDesc('fecha_compra')
+                    ->take(5); // Últimas 5 compras
+                
+                if ($comprasRecientes->count() > 0) {
+                    $cantidadComprasRecientes = $comprasRecientes->sum('cantidad');
+                    $inversionComprasRecientes = $comprasRecientes->sum(function($c) {
+                        return $c->cantidad * $c->precio_unitario;
+                    });
+                    
+                    $costoPromedioReciente = $cantidadComprasRecientes > 0 ? 
+                        $inversionComprasRecientes / $cantidadComprasRecientes : 
+                        $precioPromedioCompra;
+                } else {
+                    // Si no hay compras recientes, usar el promedio general
+                    $costoPromedioReciente = $precioPromedioCompra;
+                }
+                
+                // Calcular ganancia por unidad
+                $gananciaPorUnidad = $precioPromedioVentaReciente - $costoPromedioReciente;
+                
+                // Calcular ganancia total y promedio mensual
+                $gananciaTotal3Meses = $gananciaPorUnidad * $ventasUltimos3Meses->cantidad_vendida;
+                
+                // Dividir entre meses con ventas (no solo 3)
+                $divisorMeses = max(1, $mesesConVentas); // Mínimo 1 para evitar división por 0
+                $gananciaMensual = $gananciaTotal3Meses / $divisorMeses;
+                
+            } elseif ($totalVendido > 0 && $ventas->primera_venta) {
+                // Fallback: usar todo el histórico si no hay ventas recientes
+                $precioPromedioVenta = $ingresosTotales / $totalVendido;
                 $gananciaTotal = ($precioPromedioVenta - $precioPromedioCompra) * $totalVendido;
                 
-                // Convertir a ganancia mensual
                 $mesesTranscurridos = max(1, now()->diffInMonths($ventas->primera_venta));
                 $gananciaMensual = $gananciaTotal / $mesesTranscurridos;
+                
+            } else {
+                // No hay ventas, ganancia es 0
+                $gananciaMensual = 0;
             }
             
             return view('productos-bodega.historial', compact(
@@ -124,8 +220,8 @@ class ProductosBodegaController extends Controller
                 'precioPromedioCompra',
                 'totalVendido',
                 'stockActual',
-                'rotacionMensual',      // NUEVO
-                'gananciaMensual'       // NUEVO
+                'rotacionMensual',      // Variable correctamente definida
+                'gananciaMensual'       // Variable correctamente definida
             ));
             
         } catch (\Exception $e) {

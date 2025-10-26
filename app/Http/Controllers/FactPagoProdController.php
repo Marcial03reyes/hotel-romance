@@ -22,7 +22,7 @@ class FactPagoProdController extends Controller
             ->orderByDesc('turno')
             ->orderByDesc('id_compra');
 
-        // Filtro de fecha
+        // Filtro de fecha (mantener existente)
         $filtro = $request->get('filtro', 'todos');
         
         switch ($filtro) {
@@ -49,16 +49,30 @@ class FactPagoProdController extends Controller
         if ($request->has('turno') && $request->turno !== '') {
             $query->porTurno($request->turno);
         }
+        
+        // NUEVO: Filtro de tipo (venta normal o consumo interno)
+        if ($request->has('tipo') && $request->tipo !== '') {
+            if ($request->tipo === 'consumo_interno') {
+                $query->consumoInterno();
+            } elseif ($request->tipo === 'ventas') {
+                $query->ventasReales();
+            }
+        }
 
         $ventas = $query->get();
 
-        // Estadísticas
+        // Estadísticas mejoradas
         $estadisticas = [
-            'total_ventas' => $ventas->count(),
+            'total_ventas' => $ventas->where('precio_unitario', '>', 0)->count(),
+            'total_consumo_interno' => $ventas->where('precio_unitario', '=', 0)->count(),
+            'total_registros' => $ventas->count(),
             'total_ingresos' => $ventas->sum('total'),
             'ingresos_dia' => $ventas->where('turno', 0)->sum('total'),
             'ingresos_noche' => $ventas->where('turno', 1)->sum('total'),
             'con_comprobante' => $ventas->where('comprobante', 'SI')->count(),
+            'unidades_vendidas' => $ventas->where('precio_unitario', '>', 0)->sum('cantidad'),
+            'unidades_consumo_interno' => $ventas->where('precio_unitario', '=', 0)->sum('cantidad'),
+            'unidades_totales' => $ventas->sum('cantidad'),
         ];
 
         return view('pagos-productos.index', compact('ventas', 'estadisticas'));
@@ -80,17 +94,24 @@ class FactPagoProdController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $rules = [
             'fecha_venta' => 'required|date',
             'turno' => 'required|in:0,1',
             'id_prod_bod' => 'required|exists:dim_productos_bodega,id_prod_bod',
             'cantidad' => 'required|integer|min:1|max:9999',
-            'id_met_pago' => 'required|exists:dim_met_pago,id_met_pago',
-            'comprobante' => 'required|in:SI,NO',
-        ]);
+            'es_consumo_interno' => 'sometimes|boolean',
+        ];
+
+        // Validación condicional
+        if (!$request->has('es_consumo_interno') || !$request->es_consumo_interno) {
+            $rules['id_met_pago'] = 'required|exists:dim_met_pago,id_met_pago';
+            $rules['comprobante'] = 'required|in:SI,NO';
+        }
+
+        $request->validate($rules);
 
         try {
-            // Obtener el precio actual del producto
+            // Obtener el producto
             $producto = DimProductoBodega::findOrFail($request->id_prod_bod);
 
             $venta = new FactPagoProd();
@@ -99,16 +120,30 @@ class FactPagoProdController extends Controller
             $venta->turno = $request->turno;
             $venta->id_prod_bod = $request->id_prod_bod;
             $venta->cantidad = $request->cantidad;
-            $venta->precio_unitario = $producto->precio_actual; // Tomar precio actual del producto
+            
+            // NUEVO: Si es consumo interno, precio = 0, sino precio actual
+            if ($request->has('es_consumo_interno') && $request->es_consumo_interno) {
+                $venta->precio_unitario = 0;
+                $venta->comprobante = 'NO'; // Consumo interno nunca tiene comprobante
+                $venta->id_met_pago = 99;
+            } else {
+                $venta->precio_unitario = $producto->precio_actual;
+                $venta->comprobante = $request->comprobante;
+                $venta->id_met_pago = $request->id_met_pago;
+            }
+            
             $venta->id_met_pago = $request->id_met_pago;
-            $venta->comprobante = $request->comprobante;
             $venta->save();
 
+            $mensaje = $request->es_consumo_interno ? 
+                'Consumo interno registrado correctamente.' : 
+                'Venta registrada correctamente.';
+
             return redirect()->route('pagos-productos.index')
-                ->with('success', 'Venta registrada correctamente.');
+                ->with('success', $mensaje);
 
         } catch (\Exception $e) {
-            return back()->withErrors('Error al registrar venta: ' . $e->getMessage())->withInput();
+            return back()->withErrors('Error al registrar: ' . $e->getMessage())->withInput();
         }
     }
 

@@ -49,8 +49,7 @@
     <form action="{{ route('registros.store') }}" method="POST" id="form-registro" class="space-y-6">
         @csrf
 
-        <div class="grid lg:grid-cols-2 gap-6">
-            
+        <div class="space-y-6">
             <!-- Información del Cliente -->
             <div class="bg-white p-6 rounded-lg shadow-sm border">
                 <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -106,6 +105,28 @@
                     <div class="grid md:grid-cols-3 gap-4 mt-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class='bx bx-venus-mars mr-1'></i>
+                                Sexo
+                            </label>
+                            <select name="sexo" id="sexo" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Seleccionar</option>
+                                <option value="F">F</option>
+                                <option value="M">M</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class='bx bx-flag mr-1'></i>
+                                Nacionalidad
+                            </label>
+                            <input name="nacionalidad" id="nacionalidad" type="text" maxlength="50"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Ej: Peruana">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
                                 <i class='bx bx-heart mr-1'></i>
                                 Estado Civil
                             </label>
@@ -134,7 +155,7 @@
                             </label>
                             <input name="lugar_nacimiento" id="lugar_nacimiento" type="text" maxlength="100"
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Ciudad, paí­s...">
+                                placeholder="Ciudad, país...">
                         </div>
                     </div>
 
@@ -148,152 +169,131 @@
                     Turno de Trabajo
                 </h2>
                 
-                <div class="space-y-4">
-                    <p class="text-sm text-gray-600 mb-4">
-                        <i class='bx bx-info-circle mr-1'></i>
-                        Selecciona el turno correspondiente al momento del registro
-                    </p>
+                <div class="flex space-x-3">
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" name="turno" value="0" class="sr-only turno-radio" required>
+                        <div class="turno-button turno-dia border-2 border-gray-200 rounded-lg p-3 text-center transition-all hover:border-yellow-400 hover:bg-yellow-50">
+                            <i class='bx bx-sun text-2xl mb-1 text-yellow-600'></i>
+                            <div class="font-semibold text-gray-800 text-sm">DÍA</div>
+                        </div>
+                    </label>
                     
-                    <div class="flex space-x-4">
-                        <label class="flex-1 cursor-pointer">
-                            <input type="radio" name="turno" value="0" class="sr-only turno-radio" required>
-                            <div class="turno-button turno-dia border-2 border-gray-200 rounded-lg p-4 text-center transition-all hover:border-yellow-400 hover:bg-yellow-50">
-                                <i class='bx bx-sun text-3xl mb-2 text-yellow-600'></i>
-                                <div class="font-semibold text-gray-800">DÍA</div>
-                                <div class="text-xs text-gray-500 mt-1"></div>
-                            </div>
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" name="turno" value="1" class="sr-only turno-radio" required>
+                        <div class="turno-button turno-noche border-2 border-gray-200 rounded-lg p-3 text-center transition-all hover:border-blue-400 hover:bg-blue-50">
+                            <i class='bx bx-moon text-2xl mb-1 text-blue-600'></i>
+                            <div class="font-semibold text-gray-800 text-sm">NOCHE</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Campos auxiliares para TURNO NOCHE -->
+            <div id="campos-auxiliares-noche" class="bg-yellow-50 border border-yellow-200 rounded-lg p-6" style="display: none;">
+                <h3 class="text-lg font-semibold text-yellow-800 mb-4 flex items-center">
+                    <i class='bx bx-moon mr-2'></i>
+                    Campos Auxiliares - Turno Noche
+                </h3>
+                <p class="text-sm text-yellow-700 mb-4">
+                    <i class='bx bx-info-circle mr-1'></i>
+                    Para turno NOCHE, registra la fecha y hora real de ingreso del huésped
+                </p>
+                
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-yellow-800 mb-1">
+                            <i class='bx bx-calendar mr-1'></i>
+                            Fecha Real de Ingreso *
                         </label>
-                        
-                        <label class="flex-1 cursor-pointer">
-                            <input type="radio" name="turno" value="1" class="sr-only turno-radio" required>
-                            <div class="turno-button turno-noche border-2 border-gray-200 rounded-lg p-4 text-center transition-all hover:border-blue-400 hover:bg-blue-50">
-                                <i class='bx bx-moon text-3xl mb-2 text-blue-600'></i>
-                                <div class="font-semibold text-gray-800">NOCHE</div>
-                                <div class="text-xs text-gray-500 mt-1"></div>
-                            </div>
-                        </label>
+                        <input name="fecha_ingreso_real" id="fecha_ingreso_real" type="date" 
+                            class="w-full px-4 py-3 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white">
                     </div>
                     
-                    <div class="text-xs text-gray-500 text-center mt-3">
-                        * Campo obligatorio - Selecciona una opción para continuar
+                    <div>
+                        <label class="block text-sm font-medium text-yellow-800 mb-1">
+                            <i class='bx bx-time mr-1'></i>
+                            Hora Real de Ingreso *
+                        </label>
+                        <input name="hora_ingreso_real" id="hora_ingreso_real" type="time" 
+                            class="w-full px-4 py-3 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white">
                     </div>
                 </div>
             </div>
 
-            <!-- Información de la estadía -->
-            <div class="bg-white p-6 rounded-lg shadow-sm border">
-                    
-                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <i class='bx bx-bed mr-2' style="color: #6B8CC7;"></i>
-                        Detalles de la estadía
-                    </h2>
-
-                    <!-- Campos auxiliares solo para turno NOCHE -->
-                    <div id="campos-auxiliares-noche" class="mt-4" style="display: none;">
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                            
-                            <div class="flex items-center mb-3">
-                                <i class='bx bx-moon text-blue-600 mr-2'></i>
-                                <h3 class="text-sm font-semibold text-blue-800">Horario Real (Solo Turno Noche)</h3>
-                            </div>
-
-                            <p class="text-xs text-blue-700 mb-3">
-                                Para turno noche, registra la fecha y hora real de ingreso del cliente
-                            </p>
-                            
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                                        <i class='bx bx-calendar mr-1'></i>
-                                        Fecha Real de Ingreso *
-                                    </label>
-
-                                    <input name="fecha_ingreso_real" id="fecha_ingreso_real" type="date" 
-                                        value="{{ now()->format('Y-m-d') }}"
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <p class="text-xs text-gray-500 mt-1">Fecha real cuando llegó el cliente</p>
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                                        <i class='bx bx-time mr-1'></i>
-                                        Hora Real de Ingreso *
-                                    </label>
-
-                                    <input name="hora_ingreso_real" id="hora_ingreso_real" type="time" 
-                                        value="{{ now()->format('H:i') }}"
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <p class="text-xs text-gray-500 mt-1">Hora real cuando llegó el cliente</p>
-                                </div>
-
-                            </div>
-
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-3 gap-4 mb-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">
-                                <i class='bx bx-time mr-1'></i>
-                                Hora de Ingreso *
-                            </label>
-                            <input name="hora_ingreso" type="time" value="{{ now()->format('H:i') }}"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                required>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">
-                                <i class='bx bx-time-five mr-1'></i>
-                                Hora de Salida (Opcional)
-                            </label>
-                            <input name="hora_salida" type="time" value="{{ old('hora_salida') }}"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <small class="text-xs text-gray-500 mt-1">
-                                <i class='bx bx-info-circle mr-1'></i>
-                                Se puede registrar después
-                            </small>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">
-                                <i class='bx bx-calendar mr-1'></i>
-                                Fecha de Ingreso *
-                            </label>
-                            <input name="fecha_ingreso" type="date" value="{{ now()->format('Y-m-d') }}"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                required>
-                        </div>
-                        
+            <!-- Detalles de la Estadía -->
+            <div class="bg-white p-6 rounded-lg shadow-sm border col-span-2">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <i class='bx bx-bed mr-2' style="color: #6B8CC7;"></i>
+                    Detalles de la Estadía
+                </h2>
+                
+                <div class="grid md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class='bx bx-door-open mr-1'></i>
+                            Habitación *
+                        </label>
+                        <select name="habitacion" id="habitacion" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                            <option value="">Seleccionar habitación</option>
+                            @foreach($habitaciones as $hab)
+                                <option value="{{ $hab }}">{{ $hab }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
-                            <i class='bx bx-home mr-1'></i>
-                            Habitación *
+                            <i class='bx bx-car mr-1'></i>
+                            Placa del Vehículo
                         </label>
-                        <select name="habitacion" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
-                            <option value="">Selecciona una Habitación</option>
-                            @foreach($habitaciones as $habitacion)
-                                <option value="{{ $habitacion }}">Hab. {{ $habitacion }}</option>
-                            @endforeach
-                        </select>
+                        <input name="placa_vehiculo" id="placa_vehiculo" type="text" maxlength="20"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Ej: ABC-123">
                     </div>
-
-                    <div class="mt-4">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class='bx bx-calendar mr-1'></i>
+                            Fecha de Ingreso *
+                        </label>
+                        <input name="fecha_ingreso" id="fecha_ingreso" type="date" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class='bx bx-time mr-1'></i>
+                            Hora de Ingreso *
+                        </label>
+                        <input name="hora_ingreso" id="hora_ingreso" type="time" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class='bx bx-calendar-check mr-1'></i>
+                            Fecha de Salida
+                        </label>
+                        <input name="fecha_salida" id="fecha_salida" type="date"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class='bx bx-time mr-1'></i>
+                            Hora de Salida
+                        </label>
+                        <input name="hora_salida" id="hora_salida" type="time" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             <i class='bx bx-note mr-1'></i>
                             Observaciones
                         </label>
-                        <textarea name="obs" rows="3" maxlength="1000"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="Número de placa, notas especiales, etc..."></textarea>
-                        <p class="text-xs text-gray-500 mt-1">
-                            <i class='bx bx-info-circle mr-1'></i>
-                            Campo opcional para observaciones adicionales
-                        </p>
+                        <textarea name="obs" id="obs" rows="3" maxlength="1000"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Comentarios adicionales..."></textarea>
                     </div>
-
+                </div>
             </div>
 
         </div>  
@@ -629,12 +629,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const estadoCivilSelect = document.getElementById('estado_civil');
     const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
     const lugarNacimientoInput = document.getElementById('lugar_nacimiento');
+    const sexoSelect = document.getElementById('sexo');
+    const nacionalidadInput = document.getElementById('nacionalidad');
 
-    // === FUNCIÃ“N PARA BLOQUEAR/DESBLOQUEAR CAMPOS ADICIONALES ===
+    // === FUNCIóN PARA BLOQUEAR/DESBLOQUEAR CAMPOS ADICIONALES ===
     function bloquearCamposAdicionales(bloquear = true) {
         console.log('Bloqueando campos:', bloquear); // â† AGREGAR PARA DEBUG
-        const campos = [estadoCivilSelect, fechaNacimientoInput, lugarNacimientoInput];
-        
+        const campos = [estadoCivilSelect, fechaNacimientoInput, lugarNacimientoInput, sexoSelect, nacionalidadInput];
         console.log('Campos encontrados:', campos.map(c => c ? c.id : 'null')); // â† AGREGAR PARA DEBUG
         
         campos.forEach(campo => {
@@ -1051,7 +1052,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // === VALIDACIÓN FINAL ===
     // === VALIDACIÓN FINAL ===
     document.getElementById('form-registro').addEventListener('submit', function(e) {
         if (!clienteVerificado) {

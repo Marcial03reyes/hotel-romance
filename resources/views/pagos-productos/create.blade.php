@@ -192,6 +192,34 @@
                         </div>
                         <p class="text-xs text-gray-500 text-center mt-3">* Selecciona el turno correspondiente</p>
                     </div>
+
+                    <!-- Tipo de Registro (Consumo Interno) -->
+                    <div class="field-group">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class='bx bx-info-circle mr-2' style="color: #6B8CC7;"></i>
+                            Tipo de Registro
+                        </h2>
+                        
+                        <div class="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" 
+                                    id="es_consumo_interno" 
+                                    name="es_consumo_interno" 
+                                    value="1"
+                                    class="mr-3 w-5 h-5 text-blue-600 rounded focus:ring-blue-500">
+                                <div>
+                                    <span class="font-medium text-gray-800">
+                                        <i class='bx bx-user-check mr-1'></i>
+                                        Consumo Interno
+                                    </span>
+                                    <p class="text-xs text-gray-600 mt-1">
+                                        Marcar si el producto es consumido por el personal. 
+                                        Se registrará con precio S/ 0.00 pero afectará el inventario.
+                                    </p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -343,7 +371,7 @@
                 </div>
 
                 <!-- Comprobante -->
-                <div>
+                <div id="comprobante-section">
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         <i class='bx bx-receipt mr-1'></i>
                         ¿Requiere Comprobante?
@@ -435,7 +463,12 @@ document.addEventListener('DOMContentLoaded', function() {
     productoSelect.addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
         const precio = selectedOption.getAttribute('data-precio') || '0';
-        precioInput.value = parseFloat(precio).toFixed(2);
+        
+        // Solo actualizar precio si no es consumo interno
+        if (!consumoInternoCheck.checked) {
+            precioInput.value = parseFloat(precio).toFixed(2);
+        }
+        
         calcularTotalVenta();
     });
 
@@ -545,16 +578,99 @@ document.addEventListener('DOMContentLoaded', function() {
     btnAddPago.addEventListener('click', addPagoRow);
     updatePagoEvents();
 
+    // NUEVO: Manejo de consumo interno
+    const consumoInternoCheck = document.getElementById('es_consumo_interno');
+    const comprobanteSection = document.getElementById('comprobante-section');
+    const precioField = document.getElementById('precio_unitario');
+    const originalPrecio = {};
+    
+    if (consumoInternoCheck) {
+        consumoInternoCheck.addEventListener('change', function() {
+            if (this.checked) {
+                // Es consumo interno
+                const selectedOption = productoSelect.options[productoSelect.selectedIndex];
+                originalPrecio[productoSelect.value] = selectedOption.getAttribute('data-precio');
+                
+                precioField.value = '0.00';
+                precioField.style.backgroundColor = '#fef3c7';
+                
+                // Ocultar sección de comprobante
+                if (comprobanteSection) {
+                    comprobanteSection.style.display = 'none';
+                }
+                
+                // Actualizar el total
+                calcularTotalVenta();
+                
+                // Mostrar alerta visual
+                precioField.parentElement.insertAdjacentHTML('afterend', 
+                    '<p class="text-xs text-yellow-600 mt-1" id="consumo-alert">' +
+                    '<i class="bx bx-info-circle"></i> Consumo interno - Sin costo</p>'
+                );
+
+                // Ocultar también la sección de pago o establecer un valor por defecto
+                const metodoPagoSelect = document.querySelector('[name="id_met_pago"]');
+                if (metodoPagoSelect) {
+                    // Seleccionar automáticamente "Efectivo" o el primer método
+                    metodoPagoSelect.value = metodoPagoSelect.options[1]?.value || '';
+                    metodoPagoSelect.closest('.field-group').style.display = 'none';
+
+                    // AGREGAR: Quitar required de campos de pago
+                    document.querySelectorAll('.monto-pago').forEach(input => {
+                        input.removeAttribute('required');
+                    });
+                    const selectMetodo = document.querySelector('select[name*="metodo"]');
+                    if (selectMetodo) selectMetodo.removeAttribute('required');
+                }
+
+            } else {
+                // Es venta normal
+                if (productoSelect.value && originalPrecio[productoSelect.value]) {
+                    precioField.value = parseFloat(originalPrecio[productoSelect.value]).toFixed(2);
+                }
+                precioField.style.backgroundColor = '#f9fafb';
+                
+                // Mostrar sección de comprobante
+                if (comprobanteSection) {
+                    comprobanteSection.style.display = '';
+                }
+                
+                // Quitar alerta
+                const alert = document.getElementById('consumo-alert');
+                if (alert) alert.remove();
+                calcularTotalVenta();
+            
+                // Restaurar sección de pago
+                const metodoPagoSelect = document.querySelector('[name="id_met_pago"]');
+                if (metodoPagoSelect) {
+                    metodoPagoSelect.closest('.field-group').style.display = 'block';
+
+                    document.querySelectorAll('.monto-pago').forEach(input => {
+                        input.setAttribute('required', 'required');
+                    });
+                    const selectMetodo = document.querySelector('select[name*="metodo"]');
+                    if (selectMetodo) selectMetodo.setAttribute('required', 'required');
+                }
+            }
+        });
+    }
+
     // === VALIDACIÓN ===
     document.getElementById('form-venta').addEventListener('submit', function(e) {
+        console.log('=== INICIANDO VALIDACIÓN ===');
+
         const turnoSeleccionado = document.querySelector('input[name="turno"]:checked');
         if (!turnoSeleccionado) {
+
+            console.log('ERROR: No hay turno seleccionado');
+
             e.preventDefault();
             alert('⚠️ Debes seleccionar un turno');
             return false;
         }
 
         if (!productoSelect.value) {
+            console.log('ERROR: No hay producto seleccionado');
             e.preventDefault();
             alert('⚠️ Debes seleccionar un producto');
             productoSelect.focus();
@@ -563,11 +679,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const cantidad = parseInt(cantidadInput.value);
         if (!cantidad || cantidad <= 0) {
+            console.log('ERROR: Cantidad inválida:', cantidad);
             e.preventDefault();
             alert('⚠️ La cantidad debe ser mayor a 0');
             cantidadInput.focus();
             return false;
         }
+
+        console.log('Pagos válidos:', pagosValidos);
+        console.log('Es consumo interno:', esConsumoInterno);
+        console.log('Total venta:', totalVenta);
+        console.log('Total pagado:', totalPagado);
 
         // Validar pagos
         const totalVenta = parseFloat(precioInput.value || 0) * parseInt(cantidadInput.value || 0);
@@ -583,13 +705,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        if (pagosValidos === 0) {
+        const esConsumoInterno = document.querySelector('input[name="tipo_registro"]:checked')?.value === 'consumo_interno';
+        if (pagosValidos === 0 && !esConsumoInterno) {
             e.preventDefault();
             alert('⚠️ Debe especificar al menos un método de pago');
             return false;
         }
         
-        if (Math.abs(totalVenta - totalPagado) > 0.01) {
+        if (Math.abs(totalVenta - totalPagado) > 0.01 && !esConsumoInterno) {
             e.preventDefault();
             const diferencia = totalVenta - totalPagado;
             if (diferencia > 0) {
@@ -611,6 +734,8 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             return false;
         }
+
+        console.log('✅ TODAS LAS VALIDACIONES PASARON - ENVIANDO FORMULARIO');
         
         return true;
     });

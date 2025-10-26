@@ -30,7 +30,6 @@ class CuadreCajaController extends Controller
     private function getDatosPorDias($fechasSeleccionadas)
     {
         $datosPorDias = [];
-        
         foreach ($fechasSeleccionadas as $fecha) {
             $datosPorDias[$fecha] = [
                 'fecha' => Carbon::parse($fecha),
@@ -127,38 +126,45 @@ class CuadreCajaController extends Controller
         }
 
         // ========== GASTOS ==========
-        
-        // Gastos generales
         $gastosGenerales = DB::table('fact_gastos_generales as fgg')
             ->join('dim_met_pago as dmp', 'dmp.id_met_pago', '=', 'fgg.id_met_pago')
             ->join('dim_tipo_gasto as dtg', 'dtg.id_tipo_gasto', '=', 'fgg.id_tipo_gasto')
             ->whereIn('fgg.fecha_gasto', $fechasSeleccionadas)
-            ->select('fgg.fecha_gasto', 'dmp.met_pago', 'dtg.nombre as tipo_gasto', DB::raw('SUM(fgg.monto) as total'))
-            ->groupBy('fgg.fecha_gasto', 'dmp.id_met_pago', 'dmp.met_pago', 'dtg.id_tipo_gasto', 'dtg.nombre')
+            ->select(
+                'fgg.fecha_gasto', 
+                'fgg.turno',  // ✅ IMPORTANTE: Incluir el turno
+                'dmp.met_pago', 
+                'dtg.nombre as tipo_gasto', 
+                DB::raw('SUM(fgg.monto) as total')
+            )
+            ->groupBy('fgg.fecha_gasto', 'fgg.turno', 'dmp.id_met_pago', 'dmp.met_pago', 'dtg.id_tipo_gasto', 'dtg.nombre')
             ->get();
 
-        // Gastos fijos
+        // Gastos fijos - Asumir que se registran en el turno DÍA por defecto
         $gastosFijos = collect();
         if (Schema::hasTable('fact_pagos_gastos_fijos')) {
             $gastosFijos = DB::table('fact_pagos_gastos_fijos as fpgf')
                 ->join('dim_met_pago as dmp', 'dmp.id_met_pago', '=', 'fpgf.id_met_pago')
                 ->whereIn('fpgf.fecha_pago', $fechasSeleccionadas)
-                ->select('fpgf.fecha_pago as fecha_gasto', 'dmp.met_pago', DB::raw('"GASTOS FIJOS" as tipo_gasto'), 'fpgf.monto_pagado as total')
+                ->select(
+                    'fpgf.fecha_pago as fecha_gasto', 
+                    DB::raw('0 as turno'), // Asumir turno día para gastos fijos
+                    'dmp.met_pago', 
+                    DB::raw('"GASTOS FIJOS" as tipo_gasto'), 
+                    'fpgf.monto_pagado as total'
+                )
                 ->get();
         }
 
-        // Procesar gastos (dividir entre DÍA y NOCHE)
+        // Procesar gastos RESPETANDO EL TURNO
         foreach ($gastosGenerales->concat($gastosFijos) as $gasto) {
             $fecha = $gasto->fecha_gasto;
             $metodo = $this->clasificarMetodoDetallado($gasto->met_pago);
+            $turno = $gasto->turno == 0 ? 'dia' : 'noche'; // ✅ Usar el turno real
             
             if (isset($datosPorDias[$fecha])) {
-                // Dividir gastos entre día y noche (50% cada uno)
-                $montoDia = $gasto->total / 2;
-                $montoNoche = $gasto->total / 2;
-                
-                $datosPorDias[$fecha]['gastos']['dia'][$metodo] += $montoDia;
-                $datosPorDias[$fecha]['gastos']['noche'][$metodo] += $montoNoche;
+                // ✅ CORRECCIÓN: Asignar el gasto al turno correspondiente
+                $datosPorDias[$fecha]['gastos'][$turno][$metodo] += $gasto->total;
             }
         }
 
@@ -185,6 +191,7 @@ class CuadreCajaController extends Controller
         $resumen = [
             'hotel' => ['efectivo' => 0, 'cuenta' => 0],
             'bodega' => ['efectivo' => 0, 'cuenta' => 0],
+            'gastos' => ['efectivo' => 0, 'cuenta' => 0],
             'totales' => ['efectivo' => 0, 'cuenta' => 0, 'total' => 0]
         ];
 
@@ -204,14 +211,29 @@ class CuadreCajaController extends Controller
                 $resumen['bodega']['efectivo'] += $bodegaEfectivo;
                 $resumen['bodega']['cuenta'] += $bodegaCuenta;
 
-                // DESCONTAR GASTOS (distribuidos entre hotel y bodega)
-                $gastosEfectivo = $datos['gastos'][$turno]['efectivo'] / 2;
-                $gastosCuenta = ($datos['gastos'][$turno]['yape_plin'] + $datos['gastos'][$turno]['tarjeta']) / 2;
+                // GASTOS (ya no se dividen)
+                $gastosEfectivo = $datos['gastos'][$turno]['efectivo'];
+                $gastosCuenta = $datos['gastos'][$turno]['yape_plin'] + $datos['gastos'][$turno]['tarjeta'];
+
+                // Sumar ingresos
+                $resumen['hotel']['efectivo'] += $hotelEfectivo;
+                $resumen['hotel']['cuenta'] += $hotelCuenta;
+                $resumen['bodega']['efectivo'] += $bodegaEfectivo;
+                $resumen['bodega']['cuenta'] += $bodegaCuenta;
                 
-                $resumen['hotel']['efectivo'] -= $gastosEfectivo;
-                $resumen['hotel']['cuenta'] -= $gastosCuenta;
-                $resumen['bodega']['efectivo'] -= $gastosEfectivo;
-                $resumen['bodega']['cuenta'] -= $gastosCuenta;
+                // Sumar gastos (para tracking)
+                $resumen['gastos']['efectivo'] += $gastosEfectivo;
+                $resumen['gastos']['cuenta'] += $gastosCuenta;
+                
+                // Para el neto, restar gastos proporcionalmente entre hotel y bodega
+                // Opción 1: Distribuir gastos 50/50 entre hotel y bodega
+                $gastosEfectivoMitad = $gastosEfectivo / 2;
+                $gastosCuentaMitad = $gastosCuenta / 2;
+                
+                $resumen['hotel']['efectivo'] -= $gastosEfectivoMitad;
+                $resumen['hotel']['cuenta'] -= $gastosCuentaMitad;
+                $resumen['bodega']['efectivo'] -= $gastosEfectivoMitad;
+                $resumen['bodega']['cuenta'] -= $gastosCuentaMitad;
             }
         }
 

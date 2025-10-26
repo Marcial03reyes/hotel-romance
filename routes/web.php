@@ -96,6 +96,9 @@ Route::middleware('auth')->group(function () {
         Route::delete('{id}', [FactRegistroClienteController::class, 'destroy'])->name('destroy');
     });
     
+    Route::get('registros/export-excel', [FactRegistroClienteController::class, 'exportExcel'])->name('registros.export.excel');
+    Route::get('registros/export-pdf', [FactRegistroClienteController::class, 'exportPDF'])->name('registros.export.pdf');
+
     // ✅ CLIENTES - TODOS pueden acceder
     Route::resource('clientes', DimRegistroClienteController::class);
     Route::post('/clientes/store-ajax', [FactRegistroClienteController::class, 'storeCliente'])

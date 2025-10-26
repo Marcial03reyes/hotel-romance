@@ -17,7 +17,10 @@ class DimRegistroCliente extends Model
         'nombre_apellido',
         'estado_civil',     
         'fecha_nacimiento',  
-        'lugar_nacimiento'  
+        'lugar_nacimiento',
+        'nacionalidad',
+        'sexo',                    
+        'profesion_ocupacion'   
     ];
 
     // Cast para convertir fecha_nacimiento a Carbon automáticamente

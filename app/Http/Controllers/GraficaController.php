@@ -32,30 +32,21 @@ class GraficaController extends Controller
     private function getPeriodoFromDate($fecha)
     {
         $carbon = Carbon::parse($fecha);
-        $dia = $carbon->day;
-        
-        if ($dia >= 15) {
-            // Del 15 en adelante pertenece al período actual (15 de este mes al 14 del siguiente)
-            $mesInicio = $carbon->month;
-            $anioInicio = $carbon->year;
-            $mesFin = $carbon->month == 12 ? 1 : $carbon->month + 1;
-            $anioFin = $carbon->month == 12 ? $carbon->year + 1 : $carbon->year;
-        } else {
-            // Del 1 al 14 pertenece al período anterior (15 del mes anterior al 14 de este mes)
-            $mesInicio = $carbon->month == 1 ? 12 : $carbon->month - 1;
-            $anioInicio = $carbon->month == 1 ? $carbon->year - 1 : $carbon->year;
-            $mesFin = $carbon->month;
-            $anioFin = $carbon->year;
-        }
+
+        $mesInicio = $carbon->month; 
+        $anioInicio = $carbon->year;
+        $mesFin = $carbon->month;
+        $anioFin = $carbon->year;
 
         return [
             'mes_inicio' => $mesInicio,
             'anio_inicio' => $anioInicio,
             'mes_fin' => $mesFin,
             'anio_fin' => $anioFin,
-            'nombre_periodo' => $this->getNombreMesCorto($mesInicio) . '-' . $this->getNombreMesCorto($mesFin),
+            'nombre_periodo' => $this->getNombreMesCorto($mesInicio),
             'clave_periodo' => $anioInicio . '-' . str_pad($mesInicio, 2, '0', STR_PAD_LEFT)
         ];
+        
     }
 
     /**
@@ -100,8 +91,7 @@ class GraficaController extends Controller
         
         while ($fechaActual <= $fechaLimite) {
             // Usar día 15 para obtener el período correcto
-            $fechaRef = $fechaActual->copy()->day(15);
-            $periodo = $this->getPeriodoFromDate($fechaRef);
+            $periodo = $this->getPeriodoFromDate($fechaActual);
             
             $periodos[$periodo['clave_periodo']] = $periodo;
             
@@ -121,8 +111,8 @@ class GraficaController extends Controller
         // Usar UNION ALL para cada período
         $queries = [];
         foreach ($ultimosPeriodos as $periodo) {
-            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
-            $fechaFin = $periodo['anio_fin'] . '-' . str_pad($periodo['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-01';
+            $fechaFin = Carbon::createFromDate($periodo['anio_fin'], $periodo['mes_fin'], 1)->endOfMonth()->format('Y-m-d');
             
             $queries[] = "(
                 SELECT 
@@ -227,8 +217,8 @@ class GraficaController extends Controller
         // Ingresos de bodega - SOLO ventas sin cliente (id_estadia NULL)
         $queriesIngresos = [];
         foreach ($ultimosPeriodos as $periodo) {
-            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
-            $fechaFin = $periodo['anio_fin'] . '-' . str_pad($periodo['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-01';
+            $fechaFin = Carbon::createFromDate($periodo['anio_fin'], $periodo['mes_fin'], 1)->endOfMonth()->format('Y-m-d');
             
             $queriesIngresos[] = "(
                 SELECT 
@@ -247,8 +237,8 @@ class GraficaController extends Controller
         // Gastos de bodega usando UNION ALL (sin cambios)
         $queriesGastos = [];
         foreach ($ultimosPeriodos as $periodo) {
-            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
-            $fechaFin = $periodo['anio_fin'] . '-' . str_pad($periodo['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-01';
+            $fechaFin = Carbon::createFromDate($periodo['anio_fin'], $periodo['mes_fin'], 1)->endOfMonth()->format('Y-m-d');
             
             $queriesGastos[] = "(
                 SELECT 
@@ -374,8 +364,8 @@ class GraficaController extends Controller
         // Usar UNION ALL para cada período para evitar problemas de GROUP BY
         $queries = [];
         foreach ($ultimosPeriodos as $periodo) {
-            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
-            $fechaFin = $periodo['anio_fin'] . '-' . str_pad($periodo['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-01';
+            $fechaFin = Carbon::createFromDate($periodo['anio_fin'], $periodo['mes_fin'], 1)->endOfMonth()->format('Y-m-d');
             
             $queries[] = "(
                 SELECT 
@@ -399,8 +389,8 @@ class GraficaController extends Controller
         if (Schema::hasTable('fact_pagos_gastos_fijos')) {
             $queriesGastosFijos = [];
             foreach ($ultimosPeriodos as $periodo) {
-                $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
-                $fechaFin = $periodo['anio_fin'] . '-' . str_pad($periodo['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+                $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-01';
+                $fechaFin = Carbon::createFromDate($periodo['anio_fin'], $periodo['mes_fin'], 1)->endOfMonth()->format('Y-m-d');
                 
                 $queriesGastosFijos[] = "(
                     SELECT 
@@ -437,8 +427,8 @@ class GraficaController extends Controller
         // Ingresos del hotel usando UNION ALL
         $queriesIngresos = [];
         foreach ($ultimosPeriodos as $periodo) {
-            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
-            $fechaFin = $periodo['anio_fin'] . '-' . str_pad($periodo['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-01';
+            $fechaFin = Carbon::createFromDate($periodo['anio_fin'], $periodo['mes_fin'], 1)->endOfMonth()->format('Y-m-d');
             
             $queriesIngresos[] = "(
                 SELECT 
@@ -457,8 +447,8 @@ class GraficaController extends Controller
         // Gastos generales del hotel usando UNION ALL
         $queriesGastos = [];
         foreach ($ultimosPeriodos as $periodo) {
-            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
-            $fechaFin = $periodo['anio_fin'] . '-' . str_pad($periodo['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+            $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-01';
+            $fechaFin = Carbon::createFromDate($periodo['anio_fin'], $periodo['mes_fin'], 1)->endOfMonth()->format('Y-m-d');
             
             $queriesGastos[] = "(
                 SELECT 
@@ -480,8 +470,8 @@ class GraficaController extends Controller
         if (Schema::hasTable('fact_pagos_gastos_fijos')) {
             $queriesGastosFijos = [];
             foreach ($ultimosPeriodos as $periodo) {
-                $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
-                $fechaFin = $periodo['anio_fin'] . '-' . str_pad($periodo['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+                $fechaInicio = $periodo['anio_inicio'] . '-' . str_pad($periodo['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-01';
+                $fechaFin = Carbon::createFromDate($periodo['anio_fin'], $periodo['mes_fin'], 1)->endOfMonth()->format('Y-m-d');
                 
                 $queriesGastosFijos[] = "(
                     SELECT 
@@ -512,8 +502,8 @@ class GraficaController extends Controller
     {
         $periodoActual = $this->getPeriodoFromDate(Carbon::now());
         
-        $fechaInicio = $periodoActual['anio_inicio'] . '-' . str_pad($periodoActual['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-15';
-        $fechaFin = $periodoActual['anio_fin'] . '-' . str_pad($periodoActual['mes_fin'], 2, '0', STR_PAD_LEFT) . '-14';
+        $fechaInicio = $periodoActual['anio_inicio'] . '-' . str_pad($periodoActual['mes_inicio'], 2, '0', STR_PAD_LEFT) . '-01';
+        $fechaFin = Carbon::createFromDate($periodoActual['anio_fin'], $periodoActual['mes_fin'], 1)->endOfMonth()->format('Y-m-d');
         
         return DB::table('fact_pagos_gastos_fijos')
             ->whereBetween('fecha_pago', [$fechaInicio, $fechaFin])

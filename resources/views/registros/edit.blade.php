@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Editar Registro #' . $estadia->id_estadia . ' - Hotel Romance')
+@section('title', 'Editar Registro' . $estadia->id_estadia . ' - Hotel Romance')
 
 @section('content')
 
@@ -147,6 +147,37 @@
         font-size: 12px;
         font-weight: bold;
     }
+
+    /* Campos auxiliares turno noche con fondo azul suave */
+    .campos-auxiliares-noche {
+        background: linear-gradient(135deg, #f0f7ff 0%, #e8f2ff 100%);
+        border: 1px solid var(--light-blue);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px 0 rgba(136, 166, 211, 0.1);
+    }
+
+    .campos-auxiliares-noche h3 {
+        color: var(--accent-color);
+    }
+
+    .campos-auxiliares-noche p {
+        color: var(--secondary-color);
+    }
+
+    .campos-auxiliares-noche .input-field {
+        background-color: white;
+        border-color: var(--light-blue);
+    }
+
+    .campos-auxiliares-noche .input-field:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(136, 166, 211, 0.15);
+    }
+
+    .campos-auxiliares-noche label {
+        color: var(--accent-color);
+    }
 </style>
 
 <div class="container mx-auto py-6 px-4">
@@ -154,22 +185,13 @@
     <!-- Header con información del registro -->
     <div class="mb-6">
         <div class="flex items-center justify-between mb-4">
+
             <div>
                 <h1 class="text-3xl font-bold text-gray-800 mb-2">
                     <i class='bx bx-edit mr-2 icon-azul'></i>
                     Editar Registro #{{ $estadia->id_estadia }}
                 </h1>
                 <p class="text-gray-600">Modifica la información del registro de habitación</p>
-            </div>
-            <div class="flex items-center space-x-2">
-                <span class="badge-info">
-                    <i class='bx bx-calendar mr-1'></i>
-                    {{ \Carbon\Carbon::parse($estadia->fecha_ingreso)->format('d/m/Y') }}
-                </span>
-                <span class="badge-info">
-                    <i class='bx bx-bed mr-1'></i>
-                    Habitación {{ $estadia->habitacion }}
-                </span>
             </div>
         </div>
         
@@ -204,7 +226,6 @@
         @method('PUT')
 
         <div class="space-y-6">
-            
             <!-- Información del Cliente -->
             <div class="field-group">
                 <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -216,178 +237,248 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             <i class='bx bx-id-card mr-1'></i>
-                            Documento de Identidad
+                            Documento de Identidad *
                         </label>
-                        <input name="doc_identidad" type="text" 
-                               value="{{ old('doc_identidad', $estadia->doc_identidad) }}"
-                               class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all"
-                               maxlength="20" required placeholder="DNI o Carnet de Extranjería"
-                               id="doc_identidad">
-                        <p class="text-xs text-gray-500 mt-1">DNI (8 dígitos) o Carnet de extranjería (más de 8 dígitos)</p>
+                        <input type="text" name="doc_identidad" id="doc_identidad"
+                            value="{{ old('doc_identidad', $estadia->doc_identidad) }}"
+                            class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all"
+                            placeholder="DNI o Carnet de Extranjería" required maxlength="20">
                     </div>
-                    
+
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre y Apellido</label>
-                        <div class="relative">
-                            <input type="text" value="{{ $estadia->cliente->nombre_apellido ?? 'No especificado' }}" disabled
-                                   class="disabled-field w-full px-4 py-3 border rounded-lg cursor-not-allowed"
-                                   id="nombre_apellido_display">
-                            <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                <i class='bx bx-lock lock-icon'></i>
-                            </div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class='bx bx-user mr-1'></i>
+                            Nombre y Apellidos
+                        </label>
+                        <input type="text" id="nombre_apellido_display"
+                            value="{{ $estadia->cliente->nombre_apellido ?? 'No disponible' }}"
+                            class="input-field disabled-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all"
+                            readonly>
+                        <p class="text-xs text-gray-500 mt-1">
+                            <i class='bx bx-lock-alt lock-icon mr-1'></i>
+                            Para cambiar el nombre, edita desde la sección "Clientes"
+                        </p>
+                    </div>
+
+                    <!-- Campos adicionales opcionales -->
+                    <div class="grid md:grid-cols-3 gap-4 mt-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class='bx bx-venus-mars mr-1'></i>
+                                Sexo
+                            </label>
+                            <select name="sexo" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="F" {{ old('sexo', $estadia->cliente->sexo ?? '') == 'F' ? 'selected' : '' }}>F</option>
+                                <option value="M" {{ old('sexo', $estadia->cliente->sexo ?? '') == 'M' ? 'selected' : '' }}>M</option>
+                            </select>
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">Para cambiar el nombre, edita en la sección de Clientes</p>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class='bx bx-flag mr-1'></i>
+                                Nacionalidad
+                            </label>
+                            <input name="nacionalidad" type="text" maxlength="50"
+                                value="{{ old('nacionalidad', $estadia->cliente->nacionalidad ?? '') }}"
+                                class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all"
+                                placeholder="Ej: Peruana">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class='bx bx-heart mr-1'></i>
+                                Estado Civil
+                            </label>
+                            <select name="estado_civil" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="Soltero" {{ old('estado_civil', $estadia->cliente->estado_civil ?? '') == 'Soltero' ? 'selected' : '' }}>S</option>
+                                <option value="Casado" {{ old('estado_civil', $estadia->cliente->estado_civil ?? '') == 'Casado' ? 'selected' : '' }}>C</option>
+                                <option value="Divorciado" {{ old('estado_civil', $estadia->cliente->estado_civil ?? '') == 'Divorciado' ? 'selected' : '' }}>D</option>
+                                <option value="Viudo" {{ old('estado_civil', $estadia->cliente->estado_civil ?? '') == 'Viudo' ? 'selected' : '' }}>V</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class='bx bx-calendar mr-1'></i>
+                                Fecha de Nacimiento
+                            </label>
+                            <input name="fecha_nacimiento" type="date"
+                                value="{{ old('fecha_nacimiento', $estadia->cliente->fecha_nacimiento ?? '') }}"
+                                class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all">  
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class='bx bx-map mr-1'></i>
+                                Lugar de Nacimiento
+                            </label>
+                            <input name="lugar_nacimiento" type="text" maxlength="100"
+                                value="{{ old('lugar_nacimiento', $estadia->cliente->lugar_nacimiento ?? '') }}"
+                                class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all"
+                                placeholder="Ciudad, país...">
+                        </div>
                     </div>
                 </div>
-            </div>
+        </div>
 
             <!-- Información de la Estadía -->
-             <!-- Selector de Turno -->
+            <!-- Selector de Turno -->
             <div class="field-group">
                 <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                     <i class='bx bx-sun mr-2 icon-azul'></i>
                     Turno de Trabajo
                 </h2>
                 
-                <div class="space-y-4">
-                    <p class="text-sm text-gray-600 mb-4">
-                        <i class='bx bx-info-circle mr-1'></i>
-                        Selecciona el turno correspondiente al momento del registro
-                    </p>
+                <div class="flex space-x-3">
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" name="turno" value="0" 
+                            {{ old('turno', $estadia->turno) == '0' ? 'checked' : '' }}
+                            class="sr-only turno-radio" required>
+                        <div class="turno-button turno-dia border-2 border-gray-200 rounded-lg p-3 text-center transition-all hover:border-yellow-400 hover:bg-yellow-50">
+                            <i class='bx bx-sun text-2xl mb-1 text-yellow-600'></i>
+                            <div class="font-semibold text-gray-800 text-sm">DÍA</div>
+                        </div>
+                    </label>
                     
-                    <div class="flex space-x-4">
-                        <label class="flex-1 cursor-pointer">
-                            <input type="radio" name="turno" value="0" class="sr-only turno-radio" 
-                                   {{ old('turno', $estadia->turno ?? 0) == 0 ? 'checked' : '' }} required>
-                            <div class="turno-button turno-dia border-2 border-gray-200 rounded-lg p-4 text-center transition-all hover:border-yellow-400 hover:bg-yellow-50">
-                                <i class='bx bx-sun text-3xl mb-2 text-yellow-600'></i>
-                                <div class="font-semibold text-gray-800">DÍA</div>
-                            </div>
+                    <label class="flex-1 cursor-pointer">
+                        <input type="radio" name="turno" value="1" 
+                            {{ old('turno', $estadia->turno) == '1' ? 'checked' : '' }}
+                            class="sr-only turno-radio" required>
+                        <div class="turno-button turno-noche border-2 border-gray-200 rounded-lg p-3 text-center transition-all hover:border-blue-400 hover:bg-blue-50">
+                            <i class='bx bx-moon text-2xl mb-1 text-blue-600'></i>
+                            <div class="font-semibold text-gray-800 text-sm">NOCHE</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Campos auxiliares para TURNO NOCHE -->
+            <div id="campos-auxiliares-noche" class="campos-auxiliares-noche" style="{{ old('turno', $estadia->turno) == '1' ? 'display: block;' : 'display: none;' }}">
+                <h3 class="text-lg font-semibold text-yellow-800 mb-4 flex items-center">
+                    <i class='bx bx-moon mr-2'></i>
+                    Campos Auxiliares - Turno Noche
+                </h3>
+                <p class="text-sm text-yellow-700 mb-4">
+                    <i class='bx bx-info-circle mr-1'></i>
+                    Para turno NOCHE, registra la fecha y hora real de ingreso del huésped
+                </p>
+                
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-yellow-800 mb-1">
+                            <i class='bx bx-calendar mr-1'></i>
+                            Fecha Real de Ingreso *
                         </label>
-                        
-                        <label class="flex-1 cursor-pointer">
-                            <input type="radio" name="turno" value="1" class="sr-only turno-radio" 
-                                   {{ old('turno', $estadia->turno ?? 0) == 1 ? 'checked' : '' }} required>
-                            <div class="turno-button turno-noche border-2 border-gray-200 rounded-lg p-4 text-center transition-all hover:border-blue-400 hover:bg-blue-50">
-                                <i class='bx bx-moon text-3xl mb-2 text-blue-600'></i>
-                                <div class="font-semibold text-gray-800">NOCHE</div>
-                            </div>
-                        </label>
+                        <input name="fecha_ingreso_real" id="fecha_ingreso_real" type="date" 
+                            value="{{ old('fecha_ingreso_real', $estadia->fecha_ingreso_real) }}"
+                            class="input-field w-full px-4 py-3 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white">
                     </div>
                     
-                    <div class="text-xs text-gray-500 text-center mt-3">
-                        * Campo obligatorio - El turno actual es: <strong>{{ isset($estadia->turno) ? ($estadia->turno == 0 ? 'DÍA' : 'NOCHE') : 'No definido' }}</strong>
+                    <div>
+                        <label class="block text-sm font-medium text-yellow-800 mb-1">
+                            <i class='bx bx-time mr-1'></i>
+                            Hora Real de Ingreso *
+                        </label>
+                        <input name="hora_ingreso_real" id="hora_ingreso_real" type="time" 
+                            value="{{ old('hora_ingreso_real', $estadia->hora_ingreso_real) }}"
+                            class="input-field w-full px-4 py-3 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white">
                     </div>
                 </div>
             </div>
 
+            <!-- Detalles de la Estadía -->
             <div class="field-group">
                 <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                     <i class='bx bx-bed mr-2 icon-azul'></i>
                     Detalles de la Estadía
                 </h2>
                 
-                <div class="grid grid-cols-3 gap-4">
+                <div class="grid md:grid-cols-4 gap-4">
+
+                    <!-- Fecha de Ingreso -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class='bx bx-calendar mr-1'></i>
+                            Fecha de Ingreso *
+                        </label>
+                        <input name="fecha_ingreso" type="date" 
+                            value="{{ old('fecha_ingreso', $estadia->fecha_ingreso) }}"
+                            class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all" required>
+                    </div>
+                    
+                    <!-- Hora de Ingreso -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             <i class='bx bx-time mr-1'></i>
-                            Hora de Ingreso
+                            Hora de Ingreso *
                         </label>
                         <input name="hora_ingreso" type="time" 
-                               value="{{ old('hora_ingreso', $estadia->hora_ingreso) }}"
-                               class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all" 
-                               required>
+                            value="{{ old('hora_ingreso', $estadia->hora_ingreso) }}"
+                            class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all" required>
                     </div>
                     
+                    <!-- Fecha de Salida -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
-                            <i class='bx bx-time-five mr-1'></i>
-                            Hora de Salida (Opcional)
+                            <i class='bx bx-calendar-check mr-1'></i>
+                            Fecha de Salida
+                        </label>
+                        <input name="fecha_salida" type="date"
+                            value="{{ old('fecha_salida', $estadia->fecha_salida) }}"
+                            class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all">
+                    </div>
+                    
+                    <!-- Hora de salida -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class='bx bx-time mr-1'></i>
+                            Hora de Salida
                         </label>
                         <input name="hora_salida" type="time" 
                             value="{{ old('hora_salida', $estadia->hora_salida) }}"
                             class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all">
-                        <p class="text-xs text-gray-500 mt-1">
-                            <i class='bx bx-info-circle mr-1'></i>
-                            Campo opcional
-                        </p>
                     </div>
 
+                    <!-- Habitacion -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
-                            <i class='bx bx-calendar mr-1'></i>
-                            Fecha de Ingreso
+                            <i class='bx bx-door-open mr-1'></i>
+                            Habitación *
                         </label>
-                        <input name="fecha_ingreso" type="date"
-                               value="{{ old('fecha_ingreso', \Carbon\Carbon::parse($estadia->fecha_ingreso)->toDateString()) }}"
-                               class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all" 
-                               required>
+                        <select name="habitacion" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all" required>
+                            @foreach($habitaciones as $hab)
+                                <option value="{{ $hab }}" {{ old('habitacion', $estadia->habitacion) == $hab ? 'selected' : '' }}>
+                                    {{ $hab }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
-                </div>
-                
-                <!-- Campos auxiliares solo para turno NOCHE -->
-                <div id="campos-auxiliares-noche" class="mt-4" style="display: none;">
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                        <div class="flex items-center mb-3">
-                            <i class='bx bx-moon text-blue-600 mr-2'></i>
-                            <h3 class="text-sm font-semibold text-blue-800">Horario Real (Solo Turno Noche)</h3>
-                        </div>
-                        <p class="text-xs text-blue-700 mb-3">
-                            Para turno noche, registra la fecha y hora real de ingreso del cliente
-                        </p>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    <i class='bx bx-calendar mr-1'></i>
-                                    Fecha Real de Ingreso *
-                                </label>
-                                <input name="fecha_ingreso_real" id="fecha_ingreso_real" type="date" 
-                                    value="{{ old('fecha_ingreso_real', $estadia->fecha_ingreso_real ? $estadia->fecha_ingreso_real->format('Y-m-d') : '') }}"
-                                    class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all">
-                                <p class="text-xs text-gray-500 mt-1">Fecha real cuando llegó el cliente</p>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">
-                                    <i class='bx bx-time mr-1'></i>
-                                    Hora Real de Ingreso *
-                                </label>
-                                <input name="hora_ingreso_real" id="hora_ingreso_real" type="time" 
-                                    value="{{ old('hora_ingreso_real', $estadia->hora_ingreso_real) }}"
-                                    class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all">
-                                <p class="text-xs text-gray-500 mt-1">Hora real cuando llegó el cliente</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="mt-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        <i class='bx bx-home mr-1'></i>
-                        Habitación
-                    </label>
-                    <select name="habitacion" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all" required>
-                        @foreach ($habitaciones as $h)
-                            <option value="{{ $h }}" {{ old('habitacion', $estadia->habitacion) == $h ? 'selected' : '' }}>
-                                Habitación {{ $h }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="mt-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        <i class='bx bx-note mr-1'></i>
-                        Observaciones
-                    </label>
-                    <textarea name="obs" rows="3" maxlength="1000"
+                    
+                    <!-- Placa del Vehículo -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class='bx bx-car mr-1'></i>
+                            Placa del Vehículo
+                        </label>
+                        <input name="placa_vehiculo" type="text" maxlength="20"
+                            value="{{ old('placa_vehiculo', $estadia->placa_vehiculo) }}"
                             class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all"
-                            placeholder="Número de placa, notas especiales, etc...">{{ old('obs', $estadia->obs) }}</textarea>
-                    <p class="text-xs text-gray-500 mt-1">
-                        <i class='bx bx-info-circle mr-1'></i>
-                        Campo opcional para observaciones adicionales
-                    </p>
+                            placeholder="Ej: ABC-123">
+                    </div>
+                    
+                    <!-- Observaciones -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class='bx bx-note mr-1'></i>
+                            Observaciones
+                        </label>
+                        <textarea name="obs" rows="3" maxlength="1000"
+                                class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all"
+                                placeholder="Comentarios adicionales...">{{ old('obs', $estadia->obs) }}</textarea>
+                    </div>
+
                 </div>
             </div>
         </div>

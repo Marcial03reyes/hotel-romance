@@ -20,7 +20,11 @@ class FactRegistroCliente extends Model
         'obs',
         'turno',
         'fecha_ingreso_real',
-        'hora_ingreso_real'
+        'hora_ingreso_real',
+        'ciudad_procedencia',      
+        'ciudad_destino',          
+        'motivo_viaje',           
+        'placa_vehiculo'
     ];
 
     // Cast para manejo automático de fechas

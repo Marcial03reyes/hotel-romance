@@ -118,6 +118,28 @@
         font-style: italic;
         margin-top: 2px;
     }
+
+    .btn-excel {
+        background: linear-gradient(135deg, #10b981, #059669);
+        transition: all 0.3s ease;
+    }
+
+    .btn-excel:hover {
+        background: linear-gradient(135deg, #059669, #047857);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-pdf {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        transition: all 0.3s ease;
+    }
+
+    .btn-pdf:hover {
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
 </style>
 
 <div class="container mx-auto py-6 px-4">
@@ -128,11 +150,31 @@
             <h1 class="text-3xl font-bold text-gray-800 mb-2">Registro de Habitaciones</h1>
             <p class="text-gray-600">Gestiona los registros de huéspedes del Hotel Romance</p>
         </div>
-        <a href="{{ route('registros.create') }}"
-           class="btn-romance text-white px-6 py-3 rounded-lg font-medium shadow-lg">
-            <i class='bx bx-plus mr-2'></i>
-            Agregar registro
-        </a>
+
+         <!-- Botones de acción -->
+        <div class="flex gap-3">
+            <!-- Botón Exportar Excel -->
+            <a href="{{ route('registros.export.excel', request()->all()) }}"
+            class="btn-excel text-white px-4 py-3 rounded-lg font-medium shadow-lg">
+                <i class='bx bx-file-blank mr-2'></i>
+                Excel
+            </a>
+
+            <!-- Botón Exportar PDF -->
+            <a href="{{ route('registros.export.pdf', request()->all()) }}"
+            class="btn-pdf text-white px-4 py-3 rounded-lg font-medium shadow-lg">
+                <i class='bx bx-file-pdf mr-2'></i>
+                PDF
+            </a>
+            
+            <!-- Botón Agregar registro -->
+            <a href="{{ route('registros.create') }}"
+            class="btn-romance text-white px-6 py-3 rounded-lg font-medium shadow-lg">
+                <i class='bx bx-plus mr-2'></i>
+                Agregar registro
+            </a>
+        </div>
+
     </div>
 
     <!-- Mensajes de éxito/error -->

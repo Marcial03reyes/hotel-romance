@@ -48,6 +48,11 @@ class FactPagoProd extends Model
         return $this->cantidad * $this->precio_unitario;
     }
 
+    public function getEsConsumoInternoAttribute()
+    {
+        return $this->precio_unitario == 0;
+    }
+
     /**
      * Obtener el nombre del producto
      */
@@ -96,6 +101,14 @@ class FactPagoProd extends Model
         return \Carbon\Carbon::parse($this->fecha_venta)->format('d/m/Y');
     }
 
+    public function getTipoVentaAttribute()
+    {
+        if ($this->precio_unitario == 0) {
+            return 'CONSUMO INTERNO';
+        }
+        return 'VENTA';
+    }
+
     // ✅ SCOPES
 
     /**
@@ -107,6 +120,16 @@ class FactPagoProd extends Model
             return $query->where('turno', $turno);
         }
         return $query;
+    }
+
+    public function scopeConsumoInterno($query)
+    {
+        return $query->where('precio_unitario', 0);
+    }
+
+    public function scopeVentasReales($query)
+    {
+        return $query->where('precio_unitario', '>', 0);
     }
 
     /**
