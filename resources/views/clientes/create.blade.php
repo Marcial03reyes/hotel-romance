@@ -299,6 +299,58 @@
                                 Campo opcional
                             </p>
                         </div>
+
+                        <!-- Sexo -->
+                        <div class="space-y-2">
+                            <label class="field-label block text-sm font-medium">
+                                <i class='bx bx-venus-mars mr-1'></i>
+                                Sexo
+                            </label>
+                            <select name="sexo" class="input-field w-full rounded-lg px-4 py-3 text-gray-700">
+                                <option value="">Seleccionar</option>
+                                <option value="F" {{ old('sexo') == 'F' ? 'selected' : '' }}>F</option>
+                                <option value="M" {{ old('sexo') == 'M' ? 'selected' : '' }}>M</option>
+                            </select>
+                            <!-- helper text -->
+                             <p class="text-xs text-gray-500 mt-1">
+                                <i class='bx bx-info-circle mr-1'></i>
+                                Campo opcional
+                            </p>
+                        </div>
+
+                        <!-- Nacionalidad -->
+                        <div class="space-y-2">
+                            <label class="field-label block text-sm font-medium">
+                                <i class='bx bx-flag mr-1'></i>
+                                Nacionalidad
+                            </label>
+                            <input name="nacionalidad" type="text" maxlength="50"
+                                value="{{ old('nacionalidad') }}"
+                                class="input-field w-full rounded-lg px-4 py-3 text-gray-700 placeholder-gray-400"
+                                placeholder="Ej: Peruana">
+                            <!-- helper text -->
+                             <p class="text-xs text-gray-500 mt-1">
+                                <i class='bx bx-info-circle mr-1'></i>
+                                Campo opcional
+                            </p>
+                        </div>
+
+                        <!-- Profesión -->
+                        <div class="space-y-2">
+                            <label class="field-label block text-sm font-medium">
+                                <i class='bx bx-briefcase mr-1'></i>
+                                Profesión/Ocupación
+                            </label>
+                            <input name="profesion_ocupacion" type="text" maxlength="100"
+                                value="{{ old('profesion_ocupacion') }}"
+                                class="input-field w-full rounded-lg px-4 py-3 text-gray-700 placeholder-gray-400"
+                                placeholder="Ej: Contador, Estudiante...">
+                            <!-- helper text -->
+                             <p class="text-xs text-gray-500 mt-1">
+                                <i class='bx bx-info-circle mr-1'></i>
+                                Campo opcional
+                            </p>
+                        </div>
                     </div>
 
                     <!-- Botones de acción -->

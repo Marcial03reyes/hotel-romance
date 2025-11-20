@@ -220,6 +220,31 @@
                                 <option value="Viudo" {{ old('estado_civil', $cliente->estado_civil) == 'Viudo' ? 'selected' : '' }}>Viudo</option>
                             </select>
                         </div>
+
+                        <!-- Sexo -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class='bx bx-venus-mars mr-1'></i>
+                                Sexo
+                            </label>
+                            <select name="sexo" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all">
+                                <option value="">Seleccionar</option>
+                                <option value="F" {{ old('sexo', $cliente->sexo) == 'F' ? 'selected' : '' }}>F</option>
+                                <option value="M" {{ old('sexo', $cliente->sexo) == 'M' ? 'selected' : '' }}>M</option>
+                            </select>
+                        </div>
+
+                        <!-- Nacionalidad -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class='bx bx-flag mr-1'></i>
+                                Nacionalidad
+                            </label>
+                            <input name="nacionalidad" type="text" maxlength="50"
+                                value="{{ old('nacionalidad', $cliente->nacionalidad) }}"
+                                class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all"
+                                placeholder="Ej: Peruana">
+                        </div>
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -240,6 +265,18 @@
                                 value="{{ old('lugar_nacimiento', $cliente->lugar_nacimiento) }}"
                                 class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all"
                                 placeholder="Ciudad, país...">
+                        </div>
+
+                        <!-- Profesión/Ocupación -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class='bx bx-briefcase mr-1'></i>
+                                Profesión/Ocupación
+                            </label>
+                            <input name="profesion_ocupacion" type="text" maxlength="100"
+                                value="{{ old('profesion_ocupacion', $cliente->profesion_ocupacion) }}"
+                                class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all"
+                                placeholder="Ej: Contador, Estudiante...">
                         </div>
                     </div>
                 </div>
