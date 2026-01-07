@@ -221,10 +221,7 @@
                         <span class="text-sm">Registro Bodega</span>
                     </a>
                 </li>
-                
-                <!-- SECCIONES SOLO PARA ADMINISTRADORES -->
-                @if(Auth::user()->isAdmin())
-                
+
                 <!-- SECCIÓN FINANZAS -->
                 <span class="text-gray-500 font-bold text-xs section-title block">FINANZAS</span>
                 
@@ -249,12 +246,7 @@
                     </a>
                 </li>
 
-                <li class="menu-item group">
-                    <a href="{{ route('inversiones.index') }}" class="flex font-semibold items-center py-2 px-4 text-gray-700 rounded-md sidebar-item {{ request()->routeIs('inversiones.*') ? 'selected-item' : '' }}">
-                        <i class='bx bx-trending-up mr-3 text-lg'></i>
-                        <span class="text-sm">Inversiones</span>
-                    </a>
-                </li>
+                
 
                 <li class="menu-item group">
                     <a href="{{ route('cuadre-caja.index') }}" class="flex font-semibold items-center py-2 px-4 text-gray-700 rounded-md sidebar-item {{ request()->routeIs('cuadre-caja.*') ? 'selected-item' : '' }}">
@@ -262,7 +254,7 @@
                         <span class="text-sm">Cuadre de caja</span>
                     </a>
                 </li>
-
+                
                 <!-- SECCIÓN INVENTARIO -->
                 <span class="text-gray-500 font-bold text-xs section-title block">INVENTARIO</span>
 
@@ -280,6 +272,16 @@
                     </a>
                 </li>
 
+                <!-- SECCIONES SOLO PARA ADMINISTRADORES -->
+                @if(Auth::user()->isAdmin())
+
+                <!-- SECCIÓN FINANZAS -->
+                <li class="menu-item group">
+                    <a href="{{ route('inversiones.index') }}" class="flex font-semibold items-center py-2 px-4 text-gray-700 rounded-md sidebar-item {{ request()->routeIs('inversiones.*') ? 'selected-item' : '' }}">
+                        <i class='bx bx-trending-up mr-3 text-lg'></i>
+                        <span class="text-sm">Inversiones</span>
+                    </a>
+                </li>
                 <!-- SECCIÓN ADMINISTRACIÓN -->
                 <span class="text-gray-500 font-bold text-xs section-title block">ADMINISTRACIÓN</span>
                 

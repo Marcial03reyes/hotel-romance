@@ -214,10 +214,10 @@
                             </label>
                             <select name="estado_civil" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all">
                                 <option value="">Seleccionar</option>
-                                <option value="Soltero" {{ old('estado_civil', $cliente->estado_civil) == 'Soltero' ? 'selected' : '' }}>Soltero</option>
-                                <option value="Casado" {{ old('estado_civil', $cliente->estado_civil) == 'Casado' ? 'selected' : '' }}>Casado</option>
-                                <option value="Divorciado" {{ old('estado_civil', $cliente->estado_civil) == 'Divorciado' ? 'selected' : '' }}>Divorciado</option>
-                                <option value="Viudo" {{ old('estado_civil', $cliente->estado_civil) == 'Viudo' ? 'selected' : '' }}>Viudo</option>
+                                <option value="S" {{ old('estado_civil', $cliente->estado_civil) == 'S' ? 'selected' : '' }}>Soltero</option>
+                                <option value="C" {{ old('estado_civil', $cliente->estado_civil) == 'C' ? 'selected' : '' }}>Casado</option>
+                                <option value="D" {{ old('estado_civil', $cliente->estado_civil) == 'D' ? 'selected' : '' }}>Divorciado</option>
+                                <option value="V" {{ old('estado_civil', $cliente->estado_civil) == 'V' ? 'selected' : '' }}>Viudo</option>
                             </select>
                         </div>
 
@@ -375,9 +375,8 @@ document.addEventListener('DOMContentLoaded', function() {
     nombreInput.addEventListener('blur', function() {
         let value = this.value.trim();
         if (value) {
-            // Convertir a formato título (primera letra de cada palabra en mayúscula)
-            value = value.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-            this.value = value;
+            // CONVERTIR TODO A MAYUSCULA
+            this.value = value.toUpperCase();
         }
     });
     

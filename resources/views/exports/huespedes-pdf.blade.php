@@ -48,7 +48,7 @@
         
         .col-nro { width: 2%; }
         .col-nombre { width: 8%; }
-        .col-sexo { width: 2%; }
+        .col-sexo { width: 3%; }
         .col-edad { width: 2%; }
         .col-fecha-nac { width: 4%; }
         .col-lugar-nac { width: 6%; }
@@ -67,12 +67,24 @@
         .col-hora-sal { width: 4%; }
         .col-tarifa { width: 4%; }
         .col-placa { width: 5%; }
-        .col-doc-nro { width: 4%; }
         
         .text-left { text-align: left; }
         .text-small { font-size: 4px; }
     </style>
 </head>
+
+@php
+function getEstadoCivilCompleto($inicial) {
+    $estados = ['S' => 'Soltero', 'C' => 'Casado', 'D' => 'Divorciado', 'V' => 'Viudo'];
+    return $estados[$inicial] ?? $inicial;
+}
+
+function getSexoCompleto($inicial) {
+    $sexos = ['M' => 'Masculino', 'F' => 'Femenino'];
+    return $sexos[$inicial] ?? $inicial;
+}
+@endphp
+
 <body>
     <div class="header">
         LIBRO DE HUESPEDES - Romance
@@ -110,14 +122,14 @@
             <tr>
                 <td>{{ $contador++ }}</td>
                 <td class="text-left text-small">{{ $registro->nombre_apellido ?: '' }}</td>
-                <td>{{ $registro->sexo ?: '' }}</td>
+                <td>{{ getSexoCompleto($registro->sexo) }}</td>
                 <td>{{ $registro->fecha_nacimiento ? \Carbon\Carbon::parse($registro->fecha_nacimiento)->age : '' }}</td>
                 <td>{{ $registro->fecha_nacimiento ? \Carbon\Carbon::parse($registro->fecha_nacimiento)->format('d/m/Y') : '' }}</td>
                 <td class="text-small">{{ $registro->lugar_nacimiento ?: '' }}</td>
                 <td class="text-small">{{ $registro->nacionalidad ?: '' }}</td>
                 <td class="text-small">{{ $registro->doc_identidad ?: '' }}</td>
                 <td>{{ preg_replace('/[^0-9]/', '', $registro->doc_identidad) }}</td>
-                <td class="text-small">{{ $registro->estado_civil ?: '' }}</td>
+                <td>{{ getEstadoCivilCompleto($registro->estado_civil) }}</td>
                 <td class="text-small">{{ $registro->profesion_ocupacion ?: '' }}</td>
                 <td class="text-small">{{ $registro->ciudad_procedencia ?: '' }}</td>
                 <td class="text-small">{{ $registro->ciudad_destino ?: '' }}</td>

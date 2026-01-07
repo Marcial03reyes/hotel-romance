@@ -132,10 +132,10 @@
                             </label>
                             <select name="estado_civil" id="estado_civil" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Seleccionar</option>
-                                <option value="Soltero">S</option>
-                                <option value="Casado">C</option>
-                                <option value="Divorciado">D</option>
-                                <option value="Viudo">V</option>
+                                <option value="S">Soltero</option>
+                                <option value="C">Casado</option>
+                                <option value="D">Divorciado</option>
+                                <option value="V">Viudo</option>
                             </select>
                         </div>
                         
@@ -969,7 +969,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     nombre_apellido: nombre,
                     estado_civil: estadoCivilSelect.value,
                     fecha_nacimiento: fechaNacimientoInput.value, 
-                    lugar_nacimiento: lugarNacimientoInput.value
+                    lugar_nacimiento: lugarNacimientoInput.value,
+                    sexo: sexoSelect.value,          
+                    nacionalidad: nacionalidadInput.value  
                 })
             });
             
@@ -1005,11 +1007,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             <i class='bx bx-check-circle text-green-600 text-lg mr-2'></i>
                             <div>
                                 <strong class="text-green-800">Cliente guardado:</strong> ${nombre}
-                                <br><small class="text-green-600">âœ… Cliente registrado en la base de datos</small>
+                                <br><small class="text-green-600">Cliente registrado en la base de datos</small>
                             </div>
                         </div>
                     `;
-                    nombreHelp.textContent = 'âœ… Cliente registrado exitosamente';
+                    nombreHelp.textContent = 'Cliente registrado exitosamente';
                     btnGuardarCliente.style.display = 'none';
                     updateStepStatus(1, 'completed');
                     

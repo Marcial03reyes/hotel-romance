@@ -330,9 +330,11 @@ class FactRegistroClienteController extends Controller
             $request->validate([
                 'doc_identidad' => 'required|string|max:20|unique:dim_registro_clientes,doc_identidad',
                 'nombre_apellido' => 'required|string|max:100|min:3',
-                'estado_civil' => 'nullable|string|max:20',
+                'estado_civil' => 'nullable|string|max:1|in:S,C,D,V',
                 'fecha_nacimiento' => 'nullable|date',
                 'lugar_nacimiento' => 'nullable|string|max:100',
+                'sexo' => 'nullable|string|max:1',              
+                'nacionalidad' => 'nullable|string|max:50',
             ]);
 
             \Log::info('Validación pasó correctamente');
@@ -343,6 +345,8 @@ class FactRegistroClienteController extends Controller
             $cliente->estado_civil = $request->input('estado_civil');
             $cliente->fecha_nacimiento = $request->input('fecha_nacimiento');
             $cliente->lugar_nacimiento = $request->input('lugar_nacimiento');
+            $cliente->sexo = $request->input('sexo');
+            $cliente->nacionalidad = $request->input('nacionalidad');
             $cliente->save();
 
             return response()->json([
@@ -403,6 +407,18 @@ class FactRegistroClienteController extends Controller
         ]);
     }
 
+    private function getEstadoCivilCompleto($inicial)
+    {
+        $estados = [
+            'S' => 'Soltero',
+            'C' => 'Casado',
+            'D' => 'Divorciado', 
+            'V' => 'Viudo'
+        ];
+        return $estados[$inicial] ?? $inicial;
+    }
+
+
     /**
      * EXPORTAR A EXCEL CON FILTROS
      */
@@ -410,7 +426,7 @@ class FactRegistroClienteController extends Controller
     {
         $registros = $this->getFilteredData($request);
         
-        $filename = 'libro_huespedes.csv';
+        $filename = 'libro_huespedes_romance.csv';
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
@@ -434,14 +450,14 @@ class FactRegistroClienteController extends Controller
                 fputcsv($file, [
                     $contador++,
                     $registro->nombre_apellido,
-                    $registro->sexo,
+                    $registro->sexo == 'M' ? 'Masculino' : ($registro->sexo == 'F' ? 'Femenino' : $registro->sexo),
                     $registro->fecha_nacimiento ? \Carbon\Carbon::parse($registro->fecha_nacimiento)->age : '',
                     $registro->fecha_nacimiento ? \Carbon\Carbon::parse($registro->fecha_nacimiento)->format('d/m/Y') : '',
                     $registro->lugar_nacimiento,
                     $registro->nacionalidad,
                     $registro->doc_identidad,
                     preg_replace('/[^0-9]/', '', $registro->doc_identidad),
-                    $registro->estado_civil,
+                    $this->getEstadoCivilCompleto($registro->estado_civil),
                     $registro->profesion_ocupacion,
                     $registro->ciudad_procedencia,
                     $registro->ciudad_destino,
@@ -472,7 +488,7 @@ class FactRegistroClienteController extends Controller
         $pdf = Pdf::loadView('exports.huespedes-pdf', compact('registros'))
                 ->setPaper('a4', 'landscape');
         
-        return $pdf->download('libro_huespedes.pdf');
+        return $pdf->download('libro_huespedes_romance.pdf');
     }
 
     /**
