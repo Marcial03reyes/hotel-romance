@@ -31,6 +31,13 @@
                     <p class="text-gray-600 mt-1">Historial de compras y movimientos</p>
                 </div>
                 <div class="flex space-x-3">
+                    <!-- BOTÓN que abre el modal -->
+                    <button onclick="openStockModal()" 
+                            class="inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-purple-700 transition-colors">
+                        <i class='bx bx-edit mr-2'></i>
+                        Ajustar Stock Inicial
+                    </button>
+
                     <a href="{{ route('productos-bodega.create-compra', $producto->id_prod_bod) }}" 
                        class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-green-700 transition-colors">
                         <i class='bx bx-plus mr-2'></i>
@@ -227,4 +234,43 @@
         </div>
     </div>
 </div>
+
+<!-- MODAL (agregar al final de la vista) -->
+<div id="stockModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 class="text-lg font-medium mb-4">Ajustar Stock Inicial</h3>
+            
+            <form method="POST" action="{{ route('productos-bodega.update-producto', $producto->id_prod_bod) }}">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="nombre" value="{{ $producto->nombre }}">
+                <input type="hidden" name="precio_actual" value="{{ $producto->precio_actual }}">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Stock Inicial</label>
+                    <input type="number" name="stock_inicial" value="{{ $producto->stock_inicial }}" 
+                           class="w-full px-3 py-2 border rounded-lg" min="0" max="9999" required>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeStockModal()" 
+                            class="px-4 py-2 text-gray-600 border rounded-lg">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-purple-600 text-white rounded-lg">
+                        Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openStockModal() { document.getElementById('stockModal').classList.remove('hidden'); }
+function closeStockModal() { document.getElementById('stockModal').classList.add('hidden'); }
+</script>
+
 @endsection

@@ -14,7 +14,8 @@ class DimProductoBodega extends Model
     // IMPORTANTE: Agregar este array para permitir create()
     protected $fillable = [
         'nombre',
-        'precio_actual'  // ← Debe estar aquí
+        'precio_actual',  
+        'stock_inicial'  
     ];
 
     /**
@@ -58,9 +59,9 @@ class DimProductoBodega extends Model
      */
     public function getStockAttribute()
     {
-        $compradas = $this->comprasBodega()->sum('cantidad') ?? 0; // ✅ CORREGIDO
+        $compradas = $this->comprasBodega()->sum('cantidad') ?? 0;
         $vendidas = $this->ventasClientes()->sum('cantidad') ?? 0;
-        return $compradas - $vendidas;
+        return $this->stock_inicial + $compradas - $vendidas;
     }
 
     /**

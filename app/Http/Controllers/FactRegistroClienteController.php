@@ -305,6 +305,38 @@ class FactRegistroClienteController extends Controller
             }
             \Log::info('=== FIN PROCESAMIENTO PAGOS ADICIONALES ===');
 
+            \Log::info('=== PROCESANDO PENALIZACIONES ===');
+            if ($request->has('penalizaciones')) {
+                $penalizaciones = $request->input('penalizaciones', []);
+                \Log::info('Penalizaciones recibidas:', $penalizaciones);
+                
+                foreach ($penalizaciones as $penalizacionData) {
+                    if (isset($penalizacionData['monto']) && isset($penalizacionData['id_met_pago']) 
+                        && $penalizacionData['monto'] > 0) {
+                        
+                        \Log::info('Guardando penalización:', $penalizacionData);
+                        
+                        DB::table('fact_penalidad')->insert([
+                            'id_estadia' => $fr->id_estadia, // ✅ Usar $fr (no $registro)
+                            'monto' => $penalizacionData['monto'],
+                            'id_met_pago' => $penalizacionData['id_met_pago'],
+                            'created_at' => now()
+                        ]);
+                        
+                        // Actualizar observaciones
+                        $observacionActual = $fr->obs ?? '';
+                        $nuevaObservacion = trim($observacionActual . 
+                            "\n[" . now()->format('d/m/Y H:i') . "] DAÑO: S/" . number_format($penalizacionData['monto'], 2));
+                        
+                        $fr->obs = $nuevaObservacion;
+                        $fr->save();
+                        
+                        \Log::info('Penalización guardada correctamente');
+                    }
+                }
+            }
+            \Log::info('=== FIN PROCESAMIENTO PENALIZACIONES ===');
+
             DB::commit();
             \Log::info('Registro guardado exitosamente');
 

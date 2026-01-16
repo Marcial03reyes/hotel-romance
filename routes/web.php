@@ -23,6 +23,7 @@ use App\Http\Controllers\FactInversionController;
 use App\Http\Controllers\CuadreCajaController;
 use App\Http\Controllers\GastosFijosController;
 use App\Http\Controllers\FactGastoGeneralController;
+use App\Http\Controllers\PenalidadController;
 
 /*
 |--------------------------------------------------------------------------
@@ -94,6 +95,13 @@ Route::middleware('auth')->group(function () {
         
         // ✅ ELIMINAR ESTADÍA (AL FINAL para evitar conflictos)
         Route::delete('{id}', [FactRegistroClienteController::class, 'destroy'])->name('destroy');
+    });
+
+        Route::prefix('penalizaciones')->name('penalizaciones.')->group(function () {
+        Route::get('/metodos-pago', [PenalidadController::class, 'getMetodosPago'])->name('metodos-pago');
+        Route::get('/{id_estadia}', [PenalidadController::class, 'index'])->name('index');
+        Route::post('/{id_estadia}', [PenalidadController::class, 'store'])->name('store');
+        Route::delete('/{id_penalidad}', [PenalidadController::class, 'destroy'])->name('destroy');
     });
     
     Route::get('registros/export-excel', [FactRegistroClienteController::class, 'exportExcel'])->name('registros.export.excel');
@@ -207,7 +215,10 @@ Route::middleware('auth')->group(function () {
         // Crear nuevo producto
         Route::get('producto/create', [ProductosBodegaController::class, 'createProducto'])->name('create-producto');
         Route::post('producto', [ProductosBodegaController::class, 'storeProducto'])->name('store-producto');
-        
+        Route::put('producto/{id}', [ProductosBodegaController::class, 'updateProducto'])->name('update-producto');
+        Route::get('producto/{id}/edit', [ProductosBodegaController::class, 'editProducto'])->name('edit-producto');
+        Route::delete('producto/{id}', [ProductosBodegaController::class, 'destroyProducto'])->name('destroy-producto');
+
         // Editar producto
         Route::get('{id}/edit', [ProductosBodegaController::class, 'editProducto'])->name('edit-producto');
         Route::put('{id}', [ProductosBodegaController::class, 'updateProducto'])->name('update-producto');

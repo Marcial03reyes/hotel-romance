@@ -3,6 +3,14 @@
 @section('title', 'Productos Hotel')
 
 @section('content')
+
+<style>
+    .search-input:focus {
+        border-color: #88A6D3;
+        box-shadow: 0 0 0 3px rgba(233, 134, 114, 0.1);
+    }
+</style>
+
 <div class="py-6">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Header -->
@@ -49,6 +57,18 @@
             </div>
         @endif
 
+        <!-- Barra de búsqueda -->
+        <div class="mb-6">
+            <div class="relative max-w-md">
+                <input type="search" id="searchInput"
+                    class="search-input w-full pl-10 pr-4 py-3 rounded-lg border-2 border-gray-200 focus:outline-none transition-all"
+                    placeholder="Buscar producto...">
+                <div class="absolute top-0 left-0 inline-flex items-center p-3">
+                    <i class='bx bx-search text-gray-400'></i>
+                </div>
+            </div>
+        </div>
+
         <!-- Tabla de Productos -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div class="overflow-x-auto">
@@ -63,9 +83,9 @@
                             <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
+                    <tbody class="bg-white divide-y divide-gray-200" id="tableBody">
                         @forelse($productos as $producto)
-                            <tr class="hover:bg-gray-50">
+                            <tr class="hover:bg-gray-50" data-search="{{ strtolower($producto->nombre) }}">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="ml-4">
@@ -176,4 +196,27 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const tableBody = document.getElementById('tableBody');
+    
+    // Búsqueda en tiempo real
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const rows = tableBody.querySelectorAll('tr[data-search]');
+        
+        rows.forEach(row => {
+            const searchData = row.getAttribute('data-search');
+            if (searchData.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
+
 @endsection

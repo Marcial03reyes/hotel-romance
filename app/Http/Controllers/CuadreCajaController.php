@@ -99,6 +99,32 @@ class CuadreCajaController extends Controller
             }
         }
 
+        // ========== INGRESOS POR PENALIZACIONES ========== 
+        // AGREGAR ESTO después de los consumos de clientes (línea ~81)
+
+        $penalizaciones = DB::table('fact_penalidad as fp')
+            ->join('fact_registro_clientes as frc', 'frc.id_estadia', '=', 'fp.id_estadia')
+            ->join('dim_met_pago as dmp', 'dmp.id_met_pago', '=', 'fp.id_met_pago')
+            ->whereIn('frc.fecha_ingreso', $fechasSeleccionadas)
+            ->select(
+                'frc.fecha_ingreso',
+                'frc.turno',
+                'dmp.met_pago', 
+                DB::raw('SUM(fp.monto) as total')
+            )
+            ->groupBy('frc.fecha_ingreso', 'frc.turno', 'dmp.id_met_pago', 'dmp.met_pago')
+            ->get();
+
+        foreach ($penalizaciones as $penalizacion) {
+            $fecha = $penalizacion->fecha_ingreso;
+            $turno = $penalizacion->turno == 0 ? 'dia' : 'noche';
+            $metodo = $this->clasificarMetodoDetallado($penalizacion->met_pago);
+            
+            if (isset($datosPorDias[$fecha])) {
+                $datosPorDias[$fecha]['hotel'][$turno][$metodo] += $penalizacion->total;
+            }
+        }
+
         // ========== INGRESOS DE BODEGA ==========
         
         // Ventas directas de bodega (sin cliente asociado)
@@ -214,12 +240,6 @@ class CuadreCajaController extends Controller
                 // GASTOS (ya no se dividen)
                 $gastosEfectivo = $datos['gastos'][$turno]['efectivo'];
                 $gastosCuenta = $datos['gastos'][$turno]['yape_plin'] + $datos['gastos'][$turno]['tarjeta'];
-
-                // Sumar ingresos
-                $resumen['hotel']['efectivo'] += $hotelEfectivo;
-                $resumen['hotel']['cuenta'] += $hotelCuenta;
-                $resumen['bodega']['efectivo'] += $bodegaEfectivo;
-                $resumen['bodega']['cuenta'] += $bodegaCuenta;
                 
                 // Sumar gastos (para tracking)
                 $resumen['gastos']['efectivo'] += $gastosEfectivo;

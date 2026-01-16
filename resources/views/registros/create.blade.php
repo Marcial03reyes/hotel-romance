@@ -426,6 +426,39 @@
             </div>
         </div>
 
+        <!-- SECCIÓN DE PENALIZACIONES (solo visible con cliente verificado) -->
+        <div id="seccion-penalizaciones" class="bg-orange-50 border border-orange-200 rounded-lg p-6" style="display: none;">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-orange-800 flex items-center">
+                    <i class='bx bx-error-circle mr-2'></i>
+                    Registro de Daños/Penalizaciones
+                </h2>
+                <button type="button" id="btn-agregar-penalizacion" 
+                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-all">
+                    <i class='bx bx-plus mr-1'></i>
+                    Agregar Penalización
+                </button>
+            </div>
+            
+            <p class="text-sm text-orange-700 mb-4">
+                <i class='bx bx-info-circle mr-1'></i>
+                Registra daños ocasionados por el huésped durante su estadía
+            </p>
+            
+            <!-- Lista de penalizaciones -->
+            <div id="lista-penalizaciones" class="space-y-3">
+                <!-- Se llenarán dinámicamente -->
+            </div>
+            
+            <!-- Resumen de penalizaciones -->
+            <div id="resumen-penalizaciones" class="mt-4 p-3 bg-white rounded-lg border border-orange-200" style="display: none;">
+                <div class="flex justify-between items-center">
+                    <span class="font-medium text-orange-800">Total Penalizaciones:</span>
+                    <span class="font-bold text-red-600" id="total-penalizaciones">S/ 0.00</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Botones de acción -->
         <div class="flex items-center justify-between pt-6 border-t border-gray-200">
             <a href="{{ route('registros.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-medium transition-all">
@@ -440,6 +473,62 @@
             </button>
         </div>
     </form>
+</div>
+
+<!-- MODAL PARA PENALIZACIONES -->
+<div id="modal-penalizacion" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">Registrar Penalización</h3>
+                <button type="button" id="btn-cerrar-modal-penalizacion" 
+                        class="text-gray-400 hover:text-gray-600">
+                    <i class='bx bx-x text-xl'></i>
+                </button>
+            </div>
+            
+            <form id="form-penalizacion">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class='bx bx-dollar mr-1'></i>
+                            Monto de Penalización *
+                        </label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">S/</span>
+                            <input type="number" id="monto-penalizacion" step="0.01" min="0" required
+                                   class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                   placeholder="0.00">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class='bx bx-credit-card mr-1'></i>
+                            Método de Pago *
+                        </label>
+                        <select id="metodo-pago-penalizacion" required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                            <option value="">Seleccionar método...</option>
+                            <!-- Se llenará dinámicamente -->
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" id="btn-cancelar-penalizacion" 
+                            class="px-4 py-2 text-gray-600 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors">
+                        <i class='bx bx-check mr-1'></i>
+                        Agregar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- CSS Personalizado -->
@@ -632,6 +721,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const sexoSelect = document.getElementById('sexo');
     const nacionalidadInput = document.getElementById('nacionalidad');
 
+    // Variables de penalizaciones (MOVER ESTO AL INICIO)
+    let penalizaciones = [];
+    let penalizacionIndex = 0;
+    const seccionPenalizaciones = document.getElementById('seccion-penalizaciones');
+    const btnAgregarPenalizacion = document.getElementById('btn-agregar-penalizacion');
+    const modalPenalizacion = document.getElementById('modal-penalizacion');
+    const formPenalizacion = document.getElementById('form-penalizacion');
+    const listaPenalizaciones = document.getElementById('lista-penalizaciones');
+    const resumenPenalizaciones = document.getElementById('resumen-penalizaciones');
+    const totalPenalizacionesSpan = document.getElementById('total-penalizaciones');
+
     // === FUNCIóN PARA BLOQUEAR/DESBLOQUEAR CAMPOS ADICIONALES ===
     function bloquearCamposAdicionales(bloquear = true) {
         console.log('Bloqueando campos:', bloquear); // â† AGREGAR PARA DEBUG
@@ -663,7 +763,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // === FUNCIÃ“N PARA RESETEAR ESTADO ===
+    // === FUNCIÓN PARA RESETEAR ESTADO ===
     function resetearEstadoCliente() {
         clienteExistente = false;
         clienteVerificado = false;
@@ -685,6 +785,10 @@ document.addEventListener('DOMContentLoaded', function() {
         updateStepStatus(1, 'active');
 
         bloquearCamposAdicionales(false); // Desbloquear campos adicionales
+        seccionPenalizaciones.style.display = 'none'; 
+        penalizaciones = [];
+        renderizarPenalizaciones(); 
+        actualizarTotalPenalizaciones(); 
     }
 
     // === FUNCIONES DE PAGO ===
@@ -892,6 +996,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     btnVerificar.innerHTML = '<i class="bx bx-check mr-1"></i> Verificado';
                     btnVerificar.className = 'bg-green-500 text-white px-4 py-3 rounded-lg font-medium cursor-default';
+                    toggleSeccionPenalizaciones();
                     
                 } else {
                     // Cliente no encontrado
@@ -1014,6 +1119,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     nombreHelp.textContent = 'Cliente registrado exitosamente';
                     btnGuardarCliente.style.display = 'none';
                     updateStepStatus(1, 'completed');
+                    toggleSeccionPenalizaciones();
                     
                 } else {
                     alert('âŒ Error al guardar el cliente: ' + (data?.message || 'Error desconocido'));
@@ -1043,7 +1149,7 @@ document.addEventListener('DOMContentLoaded', function() {
     boletaSi.addEventListener('change', updateBoletaVisibility);
     boletaNo.addEventListener('change', updateBoletaVisibility);
     
-    // Hacer funciÃ³n removePagoRow global
+    // Hacer función removePagoRow global
     window.removePagoRow = removePagoRow;
 
     // === SISTEMA DE PASOS ===
@@ -1157,6 +1263,128 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('fecha_ingreso_real').required = true;
         document.getElementById('hora_ingreso_real').required = true;
     }
+
+    // Función para mostrar/ocultar sección de penalizaciones
+    function toggleSeccionPenalizaciones() {
+        if (clienteVerificado) {
+            seccionPenalizaciones.style.display = 'block';
+            cargarMetodosPagoPenalizaciones();
+        } else {
+            seccionPenalizaciones.style.display = 'none';
+        }
+    }
+
+    // Cargar métodos de pago para penalizaciones
+    async function cargarMetodosPagoPenalizaciones() {
+        try {
+            const response = await fetch('{{ route("penalizaciones.metodos-pago") }}');
+            const metodos = await response.json();
+            
+            const select = document.getElementById('metodo-pago-penalizacion');
+            select.innerHTML = '<option value="">Seleccionar método...</option>';
+            
+            metodos.forEach(metodo => {
+                const option = document.createElement('option');
+                option.value = metodo.id_met_pago;
+                option.textContent = metodo.met_pago;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error al cargar métodos de pago:', error);
+        }
+    }
+
+    // Agregar penalización
+    function agregarPenalizacion(monto, metodoId, metodoNombre) {
+        const penalizacion = {
+            id: penalizacionIndex++,
+            monto: parseFloat(monto),
+            metodo_id: metodoId,
+            metodo_nombre: metodoNombre
+        };
+        
+        penalizaciones.push(penalizacion);
+        renderizarPenalizaciones();
+        actualizarTotalPenalizaciones();
+    }
+
+    // Renderizar lista de penalizaciones
+    function renderizarPenalizaciones() {
+        listaPenalizaciones.innerHTML = '';
+        
+        penalizaciones.forEach((pen, index) => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between p-3 bg-white rounded-lg border border-red-200';
+            div.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <i class='bx bx-error-circle text-red-500'></i>
+                    <div>
+                        <span class="font-medium">Daño #${index + 1}</span>
+                        <div class="text-sm text-gray-600">${pen.metodo_nombre}</div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span class="font-bold text-red-600">S/ ${pen.monto.toFixed(2)}</span>
+                    <button type="button" onclick="eliminarPenalizacion(${pen.id})" 
+                            class="text-red-500 hover:text-red-700">
+                        <i class='bx bx-trash'></i>
+                    </button>
+                </div>
+                <input type="hidden" name="penalizaciones[${pen.id}][monto]" value="${pen.monto}">
+                <input type="hidden" name="penalizaciones[${pen.id}][id_met_pago]" value="${pen.metodo_id}">
+            `;
+            listaPenalizaciones.appendChild(div);
+        });
+    }
+
+    // Actualizar total de penalizaciones
+    function actualizarTotalPenalizaciones() {
+        const total = penalizaciones.reduce((sum, pen) => sum + pen.monto, 0);
+        totalPenalizacionesSpan.textContent = `S/ ${total.toFixed(2)}`;
+        resumenPenalizaciones.style.display = total > 0 ? 'block' : 'none';
+    }
+
+    // Eliminar penalización
+    function eliminarPenalizacion(id) {
+        penalizaciones = penalizaciones.filter(pen => pen.id !== id);
+        renderizarPenalizaciones();
+        actualizarTotalPenalizaciones();
+    }
+
+    // Eventos de penalizaciones
+    btnAgregarPenalizacion.addEventListener('click', () => {
+        modalPenalizacion.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-cerrar-modal-penalizacion').addEventListener('click', () => {
+        modalPenalizacion.classList.add('hidden');
+    });
+
+    document.getElementById('btn-cancelar-penalizacion').addEventListener('click', () => {
+        modalPenalizacion.classList.add('hidden');
+    });
+
+    formPenalizacion.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const monto = document.getElementById('monto-penalizacion').value;
+        const metodoSelect = document.getElementById('metodo-pago-penalizacion');
+        const metodoId = metodoSelect.value;
+        const metodoNombre = metodoSelect.options[metodoSelect.selectedIndex].text;
+        
+        if (monto && metodoId) {
+            agregarPenalizacion(monto, metodoId, metodoNombre);
+            
+            // Limpiar formulario y cerrar modal
+            document.getElementById('monto-penalizacion').value = '';
+            document.getElementById('metodo-pago-penalizacion').value = '';
+            modalPenalizacion.classList.add('hidden');
+        }
+    });
+
+    // Hacer función global
+    window.eliminarPenalizacion = eliminarPenalizacion;
+
 });
 </script>
 
