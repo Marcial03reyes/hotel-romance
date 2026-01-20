@@ -31,7 +31,7 @@ class ProductosBodegaController extends Controller
                 ->leftJoin(DB::raw('(
                     SELECT 
                         id_prod_bod,
-                        SUM(cantidad) as unidades_vendidas
+                        SUM(CASE WHEN cantidad > 0 THEN cantidad ELSE 0 END) as unidades_vendidas
                     FROM fact_pago_prod
                     WHERE id_estadia IS NULL
                     GROUP BY id_prod_bod
@@ -89,10 +89,10 @@ class ProductosBodegaController extends Controller
                 ->where('id_prod_bod', $id)
                 ->whereNull('id_estadia')
                 ->selectRaw('
-                    SUM(cantidad) as total_vendido,
-                    SUM(cantidad * precio_unitario) as ingresos_totales,
-                    MIN(fecha_venta) as primera_venta,
-                    MAX(fecha_venta) as ultima_venta
+                SUM(CASE WHEN cantidad > 0 THEN cantidad ELSE 0 END) as total_vendido,
+                SUM(cantidad * precio_unitario) as ingresos_totales,
+                MIN(fecha_venta) as primera_venta,
+                MAX(fecha_venta) as ultima_venta
                 ')
                 ->first();
             

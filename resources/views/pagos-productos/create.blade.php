@@ -257,6 +257,7 @@
                             <input name="cantidad" id="cantidad" type="number" min="1" max="9999" value="{{ old('cantidad', 1) }}"
                                    class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                                    required>
+                            <input type="hidden" name="monto_total" id="monto_total_hidden" value="0">
                         </div>
 
                         <div>
@@ -338,7 +339,7 @@
                                 </label>
                                 <div class="relative">
                                     <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">S/</span>
-                                    <input name="monto_pago" type="number" step="0.01" min="0"
+                                    <input name="monto_individual" type="number" step="0.01" min="0"
                                         class="input-field w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg monto-pago" 
                                         placeholder="0.00" required>
                                 </div>
@@ -457,7 +458,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const total = precio * cantidad;
         totalSpan.textContent = `S/ ${total.toFixed(2)}`;
         totalVentaRef.textContent = `S/ ${total.toFixed(2)}`;
-        calcularTotalesPago();
+        
+        const montoTotalHidden = document.getElementById('monto_total_hidden');
+        if (montoTotalHidden) {
+            montoTotalHidden.value = total.toFixed(2);
+        }
+        
+        const primerMontoPago = document.querySelector('[name="monto_pago"]');
+        if (primerMontoPago && !consumoInternoCheck.checked) {
+            primerMontoPago.value = total.toFixed(2);
+        }
     }
 
     productoSelect.addEventListener('change', function() {
@@ -623,6 +633,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (selectMetodo) selectMetodo.removeAttribute('required');
                 }
 
+                const seccionPagoMultiple = document.querySelector('.field-group:has(#pagos-wrapper)');
+                if (seccionPagoMultiple) {
+                    seccionPagoMultiple.style.display = 'none';
+                }
+
             } else {
                 // Es venta normal
                 if (productoSelect.value && originalPrecio[productoSelect.value]) {
@@ -650,6 +665,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                     const selectMetodo = document.querySelector('select[name*="metodo"]');
                     if (selectMetodo) selectMetodo.setAttribute('required', 'required');
+                }
+
+                const seccionPagoMultiple = document.querySelector('.field-group:has(#pagos-wrapper)');
+                if (seccionPagoMultiple) {
+                    seccionPagoMultiple.style.display = 'block';
                 }
             }
         });

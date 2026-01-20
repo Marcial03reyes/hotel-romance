@@ -134,6 +134,33 @@
                             Precio sugerido de venta. Se usa como referencia para nuevas ventas.
                         </p>
                     </div>
+
+                    <!-- Stock Inicial -->
+                    <div class="mt-6">
+                        <label for="stock_inicial" class="block text-sm font-medium text-gray-700 mb-2">
+                            Stock Inicial <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative max-w-xs">
+                            <input type="number" 
+                                id="stock_inicial" 
+                                name="stock_inicial" 
+                                value="{{ old('stock_inicial', $producto->stock_inicial) }}"
+                                min="0"
+                                max="9999"
+                                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm @error('stock_inicial') border-red-300 @enderror"
+                                placeholder="0"
+                                required>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <span class="text-gray-400 text-sm">unidades</span>
+                            </div>
+                        </div>
+                        @error('stock_inicial')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-1 text-xs text-gray-500">
+                            Unidades que ya tenías antes de registrar compras.
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Información del producto -->
