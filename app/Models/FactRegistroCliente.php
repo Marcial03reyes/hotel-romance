@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\TurnoCerrado;
 use Carbon\Carbon;
 
 class FactRegistroCliente extends Model
@@ -212,5 +213,14 @@ class FactRegistroCliente extends Model
     public static function getOpcionesTurno()
     {
         return self::TURNOS;
+    }
+
+    // Verificar si este registro pertenece a un turno cerrado
+    public function enTurnoCerrado(): bool
+    {
+        return TurnoCerrado::estaCerrado(
+            $this->fecha_ingreso->format('Y-m-d'), // En FactPagoProd usar: $this->fecha_venta
+            $this->turno
+        );
     }
 }

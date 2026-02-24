@@ -8,6 +8,7 @@ use App\Models\DimMetPago;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Models\TurnoCerrado;
 
 class FactPagoProdController extends Controller
 {
@@ -114,6 +115,15 @@ class FactPagoProdController extends Controller
 
         $request->validate($rules);
 
+        // Verificar si el turno está cerrado
+        if (TurnoCerrado::estaCerrado($request->fecha_venta, $request->turno)) {
+            return back()
+                ->withInput()
+                ->withErrors(['turno' => 'TURNO CERRADO: No se pueden registrar datos para la fecha ' . 
+                    \Carbon\Carbon::parse($request->fecha_venta)->format('d/m/Y') . 
+                    ' turno ' . ($request->turno == 0 ? 'DÍA' : 'NOCHE') . '. Contacte al administrador.']);
+        }
+
         DB::beginTransaction();
         try {
             $producto = DimProductoBodega::findOrFail($request->id_prod_bod);
@@ -211,6 +221,15 @@ class FactPagoProdController extends Controller
             'comprobante' => 'required|in:SI,NO',
         ]);
 
+        // Verificar si el turno está cerrado
+        if (TurnoCerrado::estaCerrado($request->fecha_venta, $request->turno)) {
+            return back()
+                ->withInput()
+                ->withErrors(['turno' => 'TURNO CERRADO: No se pueden modificar datos para la fecha ' . 
+                    \Carbon\Carbon::parse($request->fecha_venta)->format('d/m/Y') . 
+                    ' turno ' . ($request->turno == 0 ? 'DÍA' : 'NOCHE') . '. Contacte al administrador.']);
+        }
+
         try {
             $venta = FactPagoProd::findOrFail($id);
             
@@ -243,6 +262,9 @@ class FactPagoProdController extends Controller
     {
         try {
             $venta = FactPagoProd::findOrFail($id);
+            if (TurnoCerrado::estaCerrado($venta->fecha_venta, $venta->turno)) {
+                return back()->withErrors(['error' => 'TURNO CERRADO: No se puede eliminar este registro. Contacte al administrador.']);
+            }
             $productoNombre = $venta->producto_nombre;
             $venta->delete();
 

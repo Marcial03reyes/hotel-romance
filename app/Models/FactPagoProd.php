@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\TurnoCerrado;
 
 class FactPagoProd extends Model
 {
@@ -178,5 +179,14 @@ class FactPagoProd extends Model
     public function scopePorMetodoPago($query, $idMetodoPago)
     {
         return $query->where('id_met_pago', $idMetodoPago);
+    }
+
+    // Verificar si este registro pertenece a un turno cerrado
+    public function enTurnoCerrado(): bool
+    {
+        return TurnoCerrado::estaCerrado(
+            $this->fecha_ingreso->format('Y-m-d'), // En FactPagoProd usar: $this->fecha_venta
+            $this->turno
+        );
     }
 }

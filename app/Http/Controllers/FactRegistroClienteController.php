@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use App\Exports\huespedes_export; 
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\TurnoCerrado;
 
 class FactRegistroClienteController extends Controller
 {
@@ -144,6 +145,15 @@ class FactRegistroClienteController extends Controller
             'placa_vehiculo' => 'nullable|string|max:20', 
         ]);
 
+        // Verificar si el turno destino está cerrado
+        if (TurnoCerrado::estaCerrado($request->fecha_ingreso, $request->turno)) {
+            return back()
+                ->withInput()
+                ->withErrors(['turno' => 'TURNO CERRADO: No se pueden modificar datos para la fecha ' . 
+                    \Carbon\Carbon::parse($request->fecha_ingreso)->format('d/m/Y') . 
+                    ' turno ' . ($request->turno == 0 ? 'DÍA' : 'NOCHE') . '. Contacte al administrador.']);
+        }
+
         DB::beginTransaction();
         try {
             $estadia = FactRegistroCliente::findOrFail($id);
@@ -224,6 +234,15 @@ class FactRegistroClienteController extends Controller
 
             DB::beginTransaction();
 
+            // Verificar si el turno está cerrado
+            if (TurnoCerrado::estaCerrado($request->fecha_ingreso, $request->turno)) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['turno' => 'TURNO CERRADO: No se pueden registrar datos para la fecha ' . 
+                        \Carbon\Carbon::parse($request->fecha_ingreso)->format('d/m/Y') . 
+                        ' turno ' . ($request->turno == 0 ? 'DÍA' : 'NOCHE') . '. Contacte al administrador.']);
+            }
+
             // 1) Cliente
             $doc = $request->input('doc_identidad');
             $cliente = DimRegistroCliente::find($doc);
@@ -283,19 +302,6 @@ class FactRegistroClienteController extends Controller
                 $ph->boleta = $request->input('boleta') === 'SI' ? 'SI' : 'NO';
                 $ph->save();
             }
-
-            /* 4) Pagos adicionales
-            $pagos = $request->input('pagos', []);
-            foreach ($pagos as $pago) {
-                if (!empty($pago['id_met_pago']) && !empty($pago['monto'])) {
-                    $ph = new FactPagoHab();
-                    $ph->id_estadia = $fr->id_estadia;
-                    $ph->id_met_pago = $pago['id_met_pago'];
-                    $ph->monto = $pago['monto'];
-                    $ph->boleta = $request->input('boleta') === 'SI' ? 'SI' : 'NO';
-                    $ph->save();
-                }
-            } */
 
             // 4) Pagos adicionales
             \Log::info('=== PROCESANDO PAGOS ADICIONALES ===');
@@ -416,13 +422,16 @@ class FactRegistroClienteController extends Controller
     // ELIMINAR ESTADÍA (y sus pagos relacionados)
     public function destroy($id)
     {
+        // Verificar si el turno está cerrado ANTES de iniciar la transacción
+        $estadia = FactRegistroCliente::find($id);
+        if ($estadia && TurnoCerrado::estaCerrado($estadia->fecha_ingreso->format('Y-m-d'), $estadia->turno)) {
+            return back()->withErrors(['error' => 'TURNO CERRADO: No se puede eliminar este registro. Contacte al administrador.']);
+        }
+
         DB::beginTransaction();
         try {
-            // Borramos consumos
             FactPagoProd::where('id_estadia', $id)->delete();
-            // Borramos pago habitación
             FactPagoHab::where('id_estadia', $id)->delete();
-            // Borramos estadía
             FactRegistroCliente::where('id_estadia', $id)->delete();
 
             DB::commit();

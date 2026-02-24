@@ -244,9 +244,7 @@
                         <i class='bx bx-receipt mr-3 text-lg'></i>
                         <span class="text-sm">SUNAT</span>
                     </a>
-                </li>
-
-                
+                </li>   
 
                 <li class="menu-item group">
                     <a href="{{ route('cuadre-caja.index') }}" class="flex font-semibold items-center py-2 px-4 text-gray-700 rounded-md sidebar-item {{ request()->routeIs('cuadre-caja.*') ? 'selected-item' : '' }}">
@@ -254,6 +252,15 @@
                         <span class="text-sm">Cuadre de caja</span>
                     </a>
                 </li>
+
+                @if(Auth::user()->isAdmin())
+                <li class="menu-item group">
+                    <a href="{{ route('turnos-cerrados.index') }}" class="flex font-semibold items-center py-2 px-4 text-gray-700 rounded-md sidebar-item {{ request()->routeIs('turnos-cerrados.*') ? 'selected-item' : '' }}">
+                        <i class='bx bx-lock-alt mr-3 text-lg'></i>
+                        <span class="text-sm">Cierre de Turnos</span>
+                    </a>
+                </li>
+                @endif
                 
                 <!-- SECCIÓN INVENTARIO -->
                 <span class="text-gray-500 font-bold text-xs section-title block">INVENTARIO</span>

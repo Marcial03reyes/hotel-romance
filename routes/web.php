@@ -24,6 +24,7 @@ use App\Http\Controllers\CuadreCajaController;
 use App\Http\Controllers\GastosFijosController;
 use App\Http\Controllers\FactGastoGeneralController;
 use App\Http\Controllers\PenalidadController;
+use App\Http\Controllers\TurnoCerradoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -148,6 +149,20 @@ Route::middleware('auth')->group(function () {
         
         return response()->json(['ok' => false, 'message' => 'Cliente no encontrado']);
     })->name('clientes.lookup');
+
+    // API para verificar si un turno está cerrado
+    Route::get('api/turnos/verificar', function(Request $request) {
+        $fecha = $request->query('fecha');
+        $turno = $request->query('turno');
+        
+        if (!$fecha || $turno === null) {
+            return response()->json(['cerrado' => false]);
+        }
+        
+        return response()->json([
+            'cerrado' => \App\Models\TurnoCerrado::estaCerrado($fecha, (int)$turno)
+        ]);
+    })->name('api.turnos.verificar');
 
     /*
     |----------------------------------------------------------------------
@@ -322,6 +337,13 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     // GRÁFICAS Y REPORTES
     Route::get('/graficas', [GraficaController::class, 'index'])->name('graficas.index');
+
+    // GESTIÓN DE TURNOS CERRADOS
+    Route::prefix('turnos-cerrados')->name('turnos-cerrados.')->group(function () {
+        Route::get('/', [App\Http\Controllers\TurnoCerradoController::class, 'index'])->name('index');
+        Route::post('/', [App\Http\Controllers\TurnoCerradoController::class, 'store'])->name('store');
+        Route::delete('/', [App\Http\Controllers\TurnoCerradoController::class, 'destroy'])->name('destroy');
+    });
 
     /*
     |----------------------------------------------------------------------

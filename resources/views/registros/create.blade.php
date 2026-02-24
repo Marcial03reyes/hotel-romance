@@ -469,6 +469,18 @@
             </div>
         </div>
 
+        {{-- Aviso de turno cerrado (controlado por JS) --}}
+        <div id="aviso-turno-cerrado" 
+            class="hidden rounded-lg border-2 border-red-500 bg-red-50 p-4 text-red-800 shadow-sm">
+            <div class="flex items-center">
+                <i class='bx bx-lock-alt mr-3 text-2xl text-red-600'></i>
+                <div>
+                    <p class="font-bold text-red-700 text-base">🔒 TURNO CERRADO</p>
+                    <p class="text-sm mt-1" id="aviso-turno-cerrado-texto"></p>
+                </div>
+            </div>
+        </div>
+
         <!-- Botones de acción -->
         <div class="flex items-center justify-between pt-6 border-t border-gray-200">
             <a href="{{ route('registros.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-medium transition-all">
@@ -483,6 +495,21 @@
             </button>
         </div>
     </form>
+
+    {{-- Alerta de errores generales --}}
+    @if ($errors->any())
+        <div class="rounded-lg border border-red-300 bg-red-50 p-4 text-red-800 mb-6 shadow-sm">
+            <div class="flex items-center mb-2">
+                <i class='bx bx-error-circle mr-2 text-lg'></i>
+                <span class="font-medium">Se encontraron errores:</span>
+            </div>
+            <ul class="list-disc list-inside space-y-1">
+                @foreach ($errors->all() as $error)
+                    <li class="text-sm">{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 </div>
 
 <!-- MODAL NUEVO CLIENTE -->
@@ -1405,6 +1432,48 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     window.eliminarPenalizacion = eliminarPenalizacion;
+
+    // === VERIFICACIÓN DE TURNO CERRADO ===
+    const btnSubmit = document.querySelector('button[type="submit"]');
+    const avisoTurnoCerrado = document.getElementById('aviso-turno-cerrado');
+    const avisoTexto = document.getElementById('aviso-turno-cerrado-texto');
+
+    async function verificarTurnoCerrado() {
+        const fechaInput = document.querySelector('input[name="fecha_ingreso"]');
+        const turnoInput = document.querySelector('input[name="turno"]:checked');
+
+        if (!fechaInput?.value || !turnoInput) return;
+
+        const fecha = fechaInput.value;
+        const turno = turnoInput.value;
+        const turnoNombre = turno == '0' ? 'DÍA' : 'NOCHE';
+
+        try {
+            const res = await fetch(`/api/turnos/verificar?fecha=${fecha}&turno=${turno}`);
+            const data = await res.json();
+
+            if (data.cerrado) {
+                const fechaFormateada = new Date(fecha + 'T00:00:00').toLocaleDateString('es-PE', {day:'2-digit', month:'2-digit', year:'numeric'});
+                avisoTexto.textContent = `El turno ${turnoNombre} del ${fechaFormateada} ya fue cerrado y verificado. No se pueden registrar ni modificar datos. Contacta al administrador si necesitas hacer cambios.`;
+                avisoTurnoCerrado.classList.remove('hidden');
+                btnSubmit.disabled = true;
+                btnSubmit.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                avisoTurnoCerrado.classList.add('hidden');
+                btnSubmit.disabled = false;
+                btnSubmit.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        } catch (err) {
+            console.error('Error verificando turno:', err);
+        }
+    }
+
+    // Escuchar cambios en fecha y turno
+    document.querySelector('input[name="fecha_ingreso"]')?.addEventListener('change', verificarTurnoCerrado);
+    document.querySelectorAll('input[name="turno"]').forEach(r => r.addEventListener('change', verificarTurnoCerrado));
+
+    // Verificar al cargar (importante para el edit)
+    verificarTurnoCerrado();
 }); 
 </script>
 
