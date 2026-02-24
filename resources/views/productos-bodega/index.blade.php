@@ -90,11 +90,13 @@
             <h1 class="text-3xl font-bold text-gray-800 mb-2">Productos de Bodega</h1>
             <p class="text-gray-600">Control de inventario y stock del Hotel Romance</p>
         </div>
+        @if(auth()->user()->role === 'admin')
         <a href="{{ route('productos-bodega.create-producto') }}"
-           class="btn-romance text-white px-6 py-3 rounded-lg font-medium shadow-lg">
+        class="btn-romance text-white px-6 py-3 rounded-lg font-medium shadow-lg">
             <i class='bx bx-plus mr-2'></i>
             Nuevo producto
         </a>
+        @endif
     </div>
 
     <!-- Mensajes de éxito/error -->
@@ -145,7 +147,9 @@
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Unidades Vendidas</th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Stock Actual</th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Gestión</th>
+                        @if(auth()->user()->role === 'admin')
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Acciones</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200" id="tableBody">
@@ -182,6 +186,7 @@
                             </td>
                             
                             <!-- GESTIÓN (Historial + Comprar) -->
+                            @if(auth()->user()->role === 'admin')
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" onclick="event.stopPropagation();">
                                 <div class="flex items-center space-x-2">
                                     <a href="{{ route('productos-bodega.historial', $producto->id_prod_bod) }}"
@@ -197,9 +202,11 @@
                                     </a>
                                 </div>
                             </td>
+                            @endif
 
                             <!-- ACCIONES (Editar + Eliminar) -->
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" onclick="event.stopPropagation();">
+                                @if(auth()->user()->role === 'admin')
                                 <div class="flex items-center space-x-2">
                                     <a href="{{ route('productos-bodega.edit-producto', $producto->id_prod_bod) }}"
                                         class="inline-flex items-center bg-yellow-100 text-yellow-700 px-3 py-1 text-xs rounded-full hover:bg-yellow-200 transition-colors">
@@ -219,6 +226,7 @@
                                         </button>
                                     </form>
                                 </div>
+                                @endif
                             </td>
                         </tr>
                     @empty

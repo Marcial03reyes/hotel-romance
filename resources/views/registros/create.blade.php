@@ -61,48 +61,58 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             <i class='bx bx-id-card mr-1'></i>
-                            Documento de Identidad *
+                            Buscar Cliente *
                         </label>
-                        <div class="flex gap-2">
-                            <input name="doc_identidad" id="doc_identidad" type="text" 
-                                   class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                   placeholder="DNI o Carnet de Extranjería" 
-                                   required maxlength="20">
-                            <button type="button" id="btn-verificar" 
-                                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg font-medium transition-all">
-                                <i class='bx bx-search mr-1'></i>
-                                Verificar
-                            </button>
+
+                        <!-- Campo de búsqueda con dropdown -->
+                        <div class="relative" id="cliente-search-wrapper">
+                            <div class="flex gap-2 items-center px-4 py-3 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 bg-white">
+                                <i class='bx bx-search text-gray-400'></i>
+                                <input type="text" id="cliente-search-input"
+                                    class="flex-1 outline-none bg-transparent text-gray-800 placeholder-gray-400"
+                                    placeholder="Escribe nombre, apellido o DNI..."
+                                    autocomplete="off">
+                                <button type="button" id="btn-nuevo-cliente"
+                                        class="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
+                                        style="display: none;">
+                                    <i class='bx bx-user-plus'></i>
+                                    Nuevo
+                                </button>
+                            </div>
+
+                            <!-- Dropdown de resultados -->
+                            <div id="cliente-dropdown"
+                                class="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto"
+                                style="display: none;">
+                                <!-- Se llena dinámicamente -->
+                            </div>
                         </div>
-                        
-                        <div class="mt-2" id="cliente-status" style="display: none;">
+
+                        <!-- Inputs ocultos que se envían al formulario -->
+                        <input type="hidden" name="doc_identidad" id="doc_identidad">
+                        <input type="hidden" name="nombre_apellido" id="nombre_apellido">
+
+                        <!-- Estado del cliente seleccionado -->
+                        <div id="cliente-status" class="mt-2" style="display: none;">
                             <div id="cliente-message"></div>
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            <i class='bx bx-user mr-1'></i>
-                            Nombre y Apellido *
-                        </label>
-                        <div class="flex gap-2">
-                            <input name="nombre_apellido" id="nombre_apellido" type="text" 
-                                   class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                   placeholder="Nombre completo del huésped" 
-                                   maxlength="100">
-                            <button type="button" id="btn-guardar-cliente" style="display: none;"
-                                    class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-3 rounded-lg font-medium transition-all">
-                                <i class='bx bx-plus mr-1'></i>
-                                Guardar Cliente
-                            </button>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-1" id="nombre-help">
-                            Presiona "Verificar" para buscar el cliente en la base de datos
-                        </p>
-                    </div>
-
                     <!-- Campos adicionales opcionales -->
                     <div class="grid md:grid-cols-3 gap-4 mt-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class='bx bx-id-card mr-1'></i>
+                                Tipo de Documento
+                            </label>
+                            <select name="tipo_doc" id="tipo_doc" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="DNI">DNI</option>
+                                <option value="CE">CE</option>
+                                <option value="RUC">RUC</option>
+                                <option value="PAS">PASAPORTE</option>
+                            </select>
+                        </div>
+
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
                                 <i class='bx bx-venus-mars mr-1'></i>
@@ -475,6 +485,122 @@
     </form>
 </div>
 
+<!-- MODAL NUEVO CLIENTE -->
+<div id="modal-nuevo-cliente" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg">
+            
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                    <i class='bx bx-user-plus mr-2' style="color: #6B8CC7;"></i>
+                    Nuevo Cliente
+                </h3>
+                <button type="button" id="btn-cerrar-modal-cliente"
+                        class="text-gray-400 hover:text-gray-600">
+                    <i class='bx bx-x text-xl'></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+
+                <!-- Fila 1: Tipo Doc + Número -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Tipo Doc. Identidad *
+                        </label>
+                        <select id="modal-tipo-doc"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="DNI">DNI</option>
+                            <option value="CE">CE</option>
+                            <option value="RUC">RUC</option>
+                            <option value="PAS">PASAPORTE</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Número *
+                        </label>
+                        <input type="text" id="modal-doc-identidad" maxlength="20"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                               placeholder="Nro de documento">
+                    </div>
+                </div>
+
+                <!-- Fila 2: Nombre y Apellido -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Nombres y Apellidos *
+                    </label>
+                    <input type="text" id="modal-nombre-apellido" maxlength="100"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                           placeholder="Nombre completo">
+                </div>
+
+                <!-- Fila 3: Sexo + Nacionalidad + Estado Civil -->
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Sexo</label>
+                        <select id="modal-sexo"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="">Seleccionar</option>
+                            <option value="F">F</option>
+                            <option value="M">M</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nacionalidad</label>
+                        <input type="text" id="modal-nacionalidad" maxlength="50"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                               placeholder="Ej: Peruana">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Estado Civil</label>
+                        <select id="modal-estado-civil"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="">Seleccionar</option>
+                            <option value="S">Soltero</option>
+                            <option value="C">Casado</option>
+                            <option value="D">Divorciado</option>
+                            <option value="V">Viudo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Fila 4: Fecha Nacimiento + Lugar Nacimiento -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Nacimiento</label>
+                        <input type="date" id="modal-fecha-nacimiento"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Lugar de Nacimiento</label>
+                        <input type="text" id="modal-lugar-nacimiento" maxlength="100"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                               placeholder="Ciudad, país...">
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Botones -->
+            <div class="flex justify-end space-x-3 mt-6">
+                <button type="button" id="btn-cancelar-modal-cliente"
+                        class="px-4 py-2 text-gray-600 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors">
+                    Cancelar
+                </button>
+                <button type="button" id="btn-guardar-modal-cliente"
+                        class="px-6 py-2 text-white rounded-lg transition-colors font-medium" style="background-color: #6B8CC7;">
+                    <i class='bx bx-save mr-1'></i>
+                    Guardar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
 <!-- MODAL PARA PENALIZACIONES -->
 <div id="modal-penalizacion" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50">
     <div class="flex items-center justify-center min-h-screen px-4">
@@ -682,179 +808,334 @@ document.addEventListener('DOMContentLoaded', function() {
         radioSugerido.click(); // Auto-seleccionar el turno sugerido
     }
 
-    // Variables principales
-    const docInput = document.getElementById('doc_identidad');
-    const nomInput = document.getElementById('nombre_apellido');
-    const clienteStatus = document.getElementById('cliente-status');
-    const clienteMessage = document.getElementById('cliente-message');
-    const btnVerificar = document.getElementById('btn-verificar');
-    const btnGuardarCliente = document.getElementById('btn-guardar-cliente');
-    const nombreHelp = document.getElementById('nombre-help');
-    
-    let clienteExistente = false;
-    let clienteVerificado = false;
-    let clienteNuevoGuardado = false;
-    let documentoOriginal = '';
+    // VARIABLES PRINCIPALES
+    const searchInput       = document.getElementById('cliente-search-input');
+    const dropdown          = document.getElementById('cliente-dropdown');
+    const btnNuevoCliente   = document.getElementById('btn-nuevo-cliente');
+    const clienteStatus     = document.getElementById('cliente-status');
+    const clienteMessage    = document.getElementById('cliente-message');
 
-    // Variables de pago
-    const tarifaTotalInput = document.getElementById('tarifa_total');
-    const pagosWrapper = document.getElementById('pagos-wrapper');
-    const btnAddPago = document.getElementById('btn-add-pago');
-    const resumenPagos = document.getElementById('resumen-pagos');
-    const totalPagadoSpan = document.getElementById('total-pagado');
-    const totalPendienteSpan = document.getElementById('total-pendiente');
-    const alertaDiferencia = document.getElementById('alerta-diferencia');
-    const mensajeDiferencia = document.getElementById('mensaje-diferencia');
-    
-    // Variables de boleta
-    const boletaSi = document.getElementById('boleta_si');
-    const boletaNo = document.getElementById('boleta_no');
-    const montoBletaContainer = document.getElementById('monto-boleta-container');
-    const montoBletaInput = document.getElementById('monto_boleta');
-    
-    let pagoIndex = 0;
+    // Inputs ocultos
+    const docHidden         = document.getElementById('doc_identidad');
+    const nomHidden         = document.getElementById('nombre_apellido');
 
-    // Referencias a campos adicionales
-    const estadoCivilSelect = document.getElementById('estado_civil');
-    const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
-    const lugarNacimientoInput = document.getElementById('lugar_nacimiento');
-    const sexoSelect = document.getElementById('sexo');
+    // Campos adicionales del formulario principal
+    const tipoDocSelect     = document.getElementById('tipo_doc');
+    const sexoSelect        = document.getElementById('sexo');
     const nacionalidadInput = document.getElementById('nacionalidad');
+    const estadoCivilSelect = document.getElementById('estado_civil');
+    const fechaNacInput     = document.getElementById('fecha_nacimiento');
+    const lugarNacInput     = document.getElementById('lugar_nacimiento');
 
-    // Variables de penalizaciones (MOVER ESTO AL INICIO)
-    let penalizaciones = [];
-    let penalizacionIndex = 0;
-    const seccionPenalizaciones = document.getElementById('seccion-penalizaciones');
-    const btnAgregarPenalizacion = document.getElementById('btn-agregar-penalizacion');
-    const modalPenalizacion = document.getElementById('modal-penalizacion');
-    const formPenalizacion = document.getElementById('form-penalizacion');
-    const listaPenalizaciones = document.getElementById('lista-penalizaciones');
-    const resumenPenalizaciones = document.getElementById('resumen-penalizaciones');
-    const totalPenalizacionesSpan = document.getElementById('total-penalizaciones');
+    // Modal nuevo cliente
+    const modalNuevoCliente         = document.getElementById('modal-nuevo-cliente');
+    const btnCerrarModalCliente     = document.getElementById('btn-cerrar-modal-cliente');
+    const btnCancelarModalCliente   = document.getElementById('btn-cancelar-modal-cliente');
+    const btnGuardarModalCliente    = document.getElementById('btn-guardar-modal-cliente');
 
-    // === FUNCIóN PARA BLOQUEAR/DESBLOQUEAR CAMPOS ADICIONALES ===
-    function bloquearCamposAdicionales(bloquear = true) {
-        console.log('Bloqueando campos:', bloquear); // â† AGREGAR PARA DEBUG
-        const campos = [estadoCivilSelect, fechaNacimientoInput, lugarNacimientoInput, sexoSelect, nacionalidadInput];
-        console.log('Campos encontrados:', campos.map(c => c ? c.id : 'null')); // â† AGREGAR PARA DEBUG
-        
-        campos.forEach(campo => {
-            if (campo) {
-                if (bloquear) {
-                    // Bloquear campos
-                    campo.disabled = true;
-                    campo.style.backgroundColor = '#f8fafc';
-                    campo.style.borderColor = '#C8D7ED';
-                    campo.style.color = '#6b7280';
-                    campo.style.cursor = 'not-allowed';
-                    console.log('Campo bloqueado:', campo.id);
-                } else {
-                    // Desbloquear campos
-                    campo.disabled = false;
-                    campo.style.backgroundColor = '';
-                    campo.style.borderColor = '';
-                    campo.style.color = '';
-                    campo.style.cursor = '';
-                    console.log('Campo desbloqueado:', campo.id); // â† AGREGAR PARA DEBUG
-                }
+    // Estado
+    let clienteSeleccionado = false;
+    let debounceTimer       = null;
+    let penalizaciones      = [];
+    let penalizacionIndex   = 0;
+
+    // BLOQUEAR / DESBLOQUEAR CAMPOS ADICIONALES
+    function bloquearCampo(campo) {
+        if (!campo) return;
+        campo.disabled = true;
+        campo.style.backgroundColor = '#f8fafc';
+        campo.style.borderColor     = '#C8D7ED';
+        campo.style.color           = '#6b7280';
+        campo.style.cursor          = 'not-allowed';
+    }
+
+    function desbloquearCampo(campo) {
+        if (!campo) return;
+        campo.disabled              = false;
+        campo.style.backgroundColor = '';
+        campo.style.borderColor     = '';
+        campo.style.color           = '';
+        campo.style.cursor          = '';
+    }
+
+    function aplicarEstadoCampos(cliente) {
+        const campos = {
+            tipo_doc:         { el: tipoDocSelect,      val: cliente.tipo_doc },
+            sexo:             { el: sexoSelect,          val: cliente.sexo },
+            nacionalidad:     { el: nacionalidadInput,   val: cliente.nacionalidad },
+            estado_civil:     { el: estadoCivilSelect,   val: cliente.estado_civil },
+            fecha_nacimiento: { el: fechaNacInput,       val: cliente.fecha_nacimiento },
+            lugar_nacimiento: { el: lugarNacInput,       val: cliente.lugar_nacimiento },
+        };
+
+        Object.values(campos).forEach(({ el, val }) => {
+            if (!el) return;
+            if (val) {
+                el.value = val;
+                bloquearCampo(el);
             } else {
-                console.log('Campo no encontrado'); // â† AGREGAR PARA DEBUG
+                el.value = '';
+                desbloquearCampo(el);
             }
         });
     }
 
-    // === FUNCIÓN PARA RESETEAR ESTADO ===
-    function resetearEstadoCliente() {
-        clienteExistente = false;
-        clienteVerificado = false;
-        clienteNuevoGuardado = false;
-        
-        nomInput.value = '';
-        nomInput.readOnly = false;
-        nomInput.style.backgroundColor = '';
-        nomInput.style.borderColor = '';
-        
-        clienteStatus.style.display = 'none';
-        btnGuardarCliente.style.display = 'none';
-        
-        btnVerificar.disabled = false;
-        btnVerificar.className = 'bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg font-medium transition-all';
-        btnVerificar.innerHTML = '<i class="bx bx-search mr-1"></i> Verificar';
-        
-        nombreHelp.textContent = 'Presiona "Verificar" para buscar el cliente en la base de datos';
-        updateStepStatus(1, 'active');
-
-        bloquearCamposAdicionales(false); // Desbloquear campos adicionales
-        seccionPenalizaciones.style.display = 'none'; 
-        penalizaciones = [];
-        renderizarPenalizaciones(); 
-        actualizarTotalPenalizaciones(); 
+    function desbloquearTodosCampos() {
+        [tipoDocSelect, sexoSelect, nacionalidadInput,
+         estadoCivilSelect, fechaNacInput, lugarNacInput].forEach(el => {
+            if (el) {
+                el.value = '';
+                desbloquearCampo(el);
+            }
+        });
     }
 
-    // === FUNCIONES DE PAGO ===
+    // RESETEAR ESTADO CLIENTE
+    function resetearCliente() {
+        clienteSeleccionado     = false;
+        docHidden.value         = '';
+        nomHidden.value         = '';
+        clienteStatus.style.display = 'none';
+        btnNuevoCliente.style.display = 'none';
+        dropdown.style.display  = 'none';
+        desbloquearTodosCampos();
+        seccionPenalizaciones.style.display = 'none';
+        penalizaciones = [];
+        renderizarPenalizaciones();
+        actualizarTotalPenalizaciones();
+    }
+
+    // MOSTRAR CLIENTE SELECCIONADO
+    function mostrarClienteSeleccionado(nombre) {
+        clienteStatus.style.display = 'block';
+        clienteMessage.innerHTML = `
+            <div class="flex items-center px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+                <i class='bx bx-check-circle text-green-600 text-lg mr-2'></i>
+                <span class="text-green-800 font-medium">${nombre}</span>
+            </div>`;
+    }
+
+    // BÚSQUEDA CON DEBOUNCE
+    searchInput.addEventListener('input', function () {
+        const q = this.value.trim();
+
+        clearTimeout(debounceTimer);
+        dropdown.style.display  = 'none';
+        btnNuevoCliente.style.display = 'none';
+
+        if (clienteSeleccionado) resetearCliente();
+
+        if (q.length < 2) return;
+
+        debounceTimer = setTimeout(() => buscarCliente(q), 300);
+    });
+
+    async function buscarCliente(q) {
+        try {
+            const res  = await fetch(`{{ route('registros.lookup-cliente') }}?q=${encodeURIComponent(q)}`);
+            const data = await res.json();
+
+            dropdown.innerHTML = '';
+
+            if (!Array.isArray(data) || data.length === 0) {
+                // Sin resultados → mostrar botón Nuevo
+                btnNuevoCliente.style.display = 'flex';
+                return;
+            }
+
+            btnNuevoCliente.style.display = 'none';
+
+            data.forEach(cliente => {
+                const item = document.createElement('div');
+                item.className = 'px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0 text-sm';
+                item.innerHTML = `
+                    <span class="font-mono text-gray-500 mr-2">${cliente.doc_identidad}</span>
+                    <span class="font-medium text-gray-800">${cliente.nombre_apellido}</span>`;
+
+                item.addEventListener('click', () => seleccionarCliente(cliente));
+                dropdown.appendChild(item);
+            });
+
+            dropdown.style.display = 'block';
+
+        } catch (err) {
+            console.error('Error búsqueda cliente:', err);
+        }
+    }
+
+    // SELECCIONAR CLIENTE DEL DROPDOWN
+    function seleccionarCliente(cliente) {
+        clienteSeleccionado     = true;
+        docHidden.value         = cliente.doc_identidad;
+        nomHidden.value         = cliente.nombre_apellido;
+        searchInput.value       = `${cliente.doc_identidad} - ${cliente.nombre_apellido}`;
+
+        dropdown.style.display        = 'none';
+        btnNuevoCliente.style.display = 'none';
+
+        aplicarEstadoCampos(cliente);
+        mostrarClienteSeleccionado(cliente.nombre_apellido);
+        updateStepStatus(1, 'completed');
+        toggleSeccionPenalizaciones();
+    }
+
+    // CERRAR DROPDOWN AL CLICK FUERA
+    document.addEventListener('click', function (e) {
+        if (!document.getElementById('cliente-search-wrapper').contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    // MODAL NUEVO CLIENTE — ABRIR / CERRAR
+    btnNuevoCliente.addEventListener('click', () => {
+        // Pre-llenar con lo que escribió el usuario
+        const q = searchInput.value.trim();
+        const soloNumeros = /^\d+$/.test(q);
+
+        document.getElementById('modal-doc-identidad').value       = soloNumeros ? q : '';
+        document.getElementById('modal-nombre-apellido').value     = soloNumeros ? '' : q.toUpperCase();
+        document.getElementById('modal-tipo-doc').value            = 'DNI';
+        document.getElementById('modal-sexo').value                = '';
+        document.getElementById('modal-nacionalidad').value        = '';
+        document.getElementById('modal-estado-civil').value        = '';
+        document.getElementById('modal-fecha-nacimiento').value    = '';
+        document.getElementById('modal-lugar-nacimiento').value    = '';
+
+        modalNuevoCliente.classList.remove('hidden');
+    });
+
+    function cerrarModalCliente() {
+        modalNuevoCliente.classList.add('hidden');
+    }
+
+    btnCerrarModalCliente.addEventListener('click', cerrarModalCliente);
+    btnCancelarModalCliente.addEventListener('click', cerrarModalCliente);
+
+    // GUARDAR NUEVO CLIENTE DESDE MODAL
+    btnGuardarModalCliente.addEventListener('click', async function () {
+        const doc    = document.getElementById('modal-doc-identidad').value.trim();
+        const nombre = document.getElementById('modal-nombre-apellido').value.trim();
+
+        if (!doc || !nombre) {
+            alert('El número de documento y el nombre son obligatorios');
+            return;
+        }
+        if (nombre.length < 3) {
+            alert('El nombre debe tener al menos 3 caracteres');
+            return;
+        }
+
+        btnGuardarModalCliente.disabled = true;
+        btnGuardarModalCliente.innerHTML = '<i class="bx bx-loader-alt mr-1"></i> Guardando...';
+
+        try {
+            const response = await fetch('{{ route("clientes.store-ajax") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    doc_identidad:    doc,
+                    nombre_apellido:  nombre,
+                    tipo_doc:         document.getElementById('modal-tipo-doc').value,
+                    sexo:             document.getElementById('modal-sexo').value,
+                    nacionalidad:     document.getElementById('modal-nacionalidad').value,
+                    estado_civil:     document.getElementById('modal-estado-civil').value,
+                    fecha_nacimiento: document.getElementById('modal-fecha-nacimiento').value,
+                    lugar_nacimiento: document.getElementById('modal-lugar-nacimiento').value,
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.ok) {
+                // Seleccionar automáticamente el cliente recién creado
+                seleccionarCliente({
+                    doc_identidad:    doc,
+                    nombre_apellido:  nombre,
+                    tipo_doc:         document.getElementById('modal-tipo-doc').value,
+                    sexo:             document.getElementById('modal-sexo').value,
+                    nacionalidad:     document.getElementById('modal-nacionalidad').value,
+                    estado_civil:     document.getElementById('modal-estado-civil').value,
+                    fecha_nacimiento: document.getElementById('modal-fecha-nacimiento').value,
+                    lugar_nacimiento: document.getElementById('modal-lugar-nacimiento').value,
+                });
+                cerrarModalCliente();
+            } else {
+                alert('Error: ' + (data.message || 'No se pudo guardar el cliente'));
+            }
+
+        } catch (err) {
+            console.error('Error guardando cliente:', err);
+            alert('Error de conexión al guardar el cliente');
+        } finally {
+            btnGuardarModalCliente.disabled = false;
+            btnGuardarModalCliente.innerHTML = '<i class="bx bx-save mr-1"></i> Guardar';
+        }
+    });
+
+    // VARIABLES DE PAGO
+    const tarifaTotalInput      = document.getElementById('tarifa_total');
+    const pagosWrapper          = document.getElementById('pagos-wrapper');
+    const btnAddPago            = document.getElementById('btn-add-pago');
+    const resumenPagos          = document.getElementById('resumen-pagos');
+    const totalPagadoSpan       = document.getElementById('total-pagado');
+    const totalPendienteSpan    = document.getElementById('total-pendiente');
+    const alertaDiferencia      = document.getElementById('alerta-diferencia');
+    const mensajeDiferencia     = document.getElementById('mensaje-diferencia');
+    const boletaSi              = document.getElementById('boleta_si');
+    const boletaNo              = document.getElementById('boleta_no');
+    const montoBletaContainer   = document.getElementById('monto-boleta-container');
+    const montoBletaInput       = document.getElementById('monto_boleta');
+
+    let pagoIndex = 0;
+
     function getNextPagoNumber() {
-        // Obtener el nÃºmero mÃ¡s alto actual y sumar 1
         const existingNumbers = Array.from(document.querySelectorAll('.pago-item')).map(item => {
-            const text = item.querySelector('h4').textContent;
-            const match = text.match(/MÃ©todo de Pago #(\d+)/);
+            const match = item.querySelector('h4').textContent.match(/Método de Pago #(\d+)/);
             return match ? parseInt(match[1]) : 0;
         });
-        
-        if (existingNumbers.length === 0) return 2; // Si no hay elementos, el siguiente es #2
-        return Math.max(...existingNumbers) + 1;
+        return existingNumbers.length === 0 ? 2 : Math.max(...existingNumbers) + 1;
     }
 
-    // DEBUG: Verificar qué se genera al agregar un pago
     function addPagoRow() {
-        const nextNumber = getNextPagoNumber();
+        const nextNumber     = getNextPagoNumber();
         const selectOriginal = document.querySelector('select[name="id_met_pago"]');
-        const opcionesHTML = selectOriginal.innerHTML;
-        
-        // NO incrementar aquí todavía
-        
+        const opcionesHTML   = selectOriginal.innerHTML;
+
         const div = document.createElement('div');
         div.className = 'pago-item';
         div.setAttribute('data-pago-index', pagoIndex);
         div.innerHTML = `
             <div class="flex items-center justify-between mb-3">
                 <h4 class="font-medium text-gray-700">Método de Pago #${nextNumber}</h4>
-                <button type="button" onclick="removePagoRow(this)" 
+                <button type="button" onclick="removePagoRow(this)"
                         class="text-red-500 hover:text-red-700 transition-colors">
                     <i class='bx bx-trash'></i>
                 </button>
             </div>
             <div class="grid md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        <i class='bx bx-wallet mr-1'></i>
-                        Método de Pago *
-                    </label>
-                    <select name="pagos[${pagoIndex}][id_met_pago]" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all metodo-pago" required>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Método de Pago *</label>
+                    <select name="pagos[${pagoIndex}][id_met_pago]"
+                            class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all metodo-pago" required>
                         ${opcionesHTML}
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        <i class='bx bx-dollar mr-1'></i>
-                        Monto *
-                    </label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Monto *</label>
                     <div class="relative">
                         <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">S/</span>
                         <input name="pagos[${pagoIndex}][monto]" type="number" step="0.01" min="0"
-                            class="input-field w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg transition-all monto-pago" 
+                            class="input-field w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg transition-all monto-pago"
                             required placeholder="0.00">
                     </div>
                 </div>
-            </div>
-        `;
-        
+            </div>`;
+
         pagosWrapper.appendChild(div);
-        
-        // INCREMENTAR DESPUÉS de usar
         pagoIndex++;
-        
-        console.log('Pago agregado. Index usado:', pagoIndex - 1);
-        
         updatePagoEvents();
         updateBoletaVisibility();
     }
@@ -867,7 +1148,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updatePagoEvents() {
-        // Remover eventos anteriores y agregar nuevos
         document.querySelectorAll('.monto-pago').forEach(input => {
             input.removeEventListener('input', calcularTotales);
             input.addEventListener('input', calcularTotales);
@@ -877,44 +1157,39 @@ document.addEventListener('DOMContentLoaded', function() {
     function calcularTotales() {
         const tarifaTotal = parseFloat(tarifaTotalInput.value) || 0;
         let totalPagado = 0;
-        
-        // Sumar todos los montos de pago
+
         document.querySelectorAll('.monto-pago').forEach(input => {
-            const monto = parseFloat(input.value) || 0;
-            totalPagado += monto;
+            totalPagado += parseFloat(input.value) || 0;
         });
-        
+
         const pendiente = tarifaTotal - totalPagado;
-        
-        // Mostrar resumen solo si hay tarifa total
+
         if (tarifaTotal > 0) {
             resumenPagos.style.display = 'block';
-            totalPagadoSpan.textContent = `S/ ${totalPagado.toFixed(2)}`;
+            totalPagadoSpan.textContent    = `S/ ${totalPagado.toFixed(2)}`;
             totalPendienteSpan.textContent = `S/ ${pendiente.toFixed(2)}`;
-            
-            // Mostrar alerta si hay diferencia
+
             if (Math.abs(pendiente) > 0.01) {
                 alertaDiferencia.style.display = 'block';
                 if (pendiente > 0) {
-                    mensajeDiferencia.textContent = `Falta S/ ${pendiente.toFixed(2)} por completar el pago total`;
+                    mensajeDiferencia.textContent          = `Falta S/ ${pendiente.toFixed(2)} por completar el pago total`;
                     alertaDiferencia.style.backgroundColor = '#fef3c7';
-                    alertaDiferencia.style.borderColor = '#f59e0b';
-                    alertaDiferencia.style.color = '#92400e';
+                    alertaDiferencia.style.borderColor     = '#f59e0b';
+                    alertaDiferencia.style.color           = '#92400e';
                 } else {
-                    mensajeDiferencia.textContent = `Hay un exceso de S/ ${Math.abs(pendiente).toFixed(2)} en los pagos`;
+                    mensajeDiferencia.textContent          = `Hay un exceso de S/ ${Math.abs(pendiente).toFixed(2)} en los pagos`;
                     alertaDiferencia.style.backgroundColor = '#fef2f2';
-                    alertaDiferencia.style.borderColor = '#ef4444';
-                    alertaDiferencia.style.color = '#dc2626';
+                    alertaDiferencia.style.borderColor     = '#ef4444';
+                    alertaDiferencia.style.color           = '#dc2626';
                 }
             } else {
                 alertaDiferencia.style.display = 'none';
             }
         } else {
-            resumenPagos.style.display = 'none';
+            resumenPagos.style.display     = 'none';
             alertaDiferencia.style.display = 'none';
         }
-        
-        // Actualizar lÃ­mite del monto de boleta
+
         if (montoBletaInput) {
             montoBletaInput.max = totalPagado;
             if (parseFloat(montoBletaInput.value) > totalPagado) {
@@ -924,262 +1199,45 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateBoletaVisibility() {
-        const totalPagos = document.querySelectorAll('.pago-item').length;
-        const requiereBoleta = boletaSi.checked;
-        
-        // Mostrar campo de monto boleta solo si:
-        // 1. Hay mÃ¡s de un mÃ©todo de pago Y
-        // 2. Se requiere boleta
+        const totalPagos      = document.querySelectorAll('.pago-item').length;
+        const requiereBoleta  = boletaSi.checked;
+
         if (totalPagos > 1 && requiereBoleta) {
             montoBletaContainer.style.display = 'block';
-            montoBletaInput.required = true;
+            montoBletaInput.required          = true;
         } else {
             montoBletaContainer.style.display = 'none';
-            montoBletaInput.required = false;
-            montoBletaInput.value = '';
+            montoBletaInput.required          = false;
+            montoBletaInput.value             = '';
         }
     }
 
-    // === DETECTAR CAMBIOS EN DNI ===
-    docInput.addEventListener('input', function() {
-        const valorActual = this.value.trim();
-        if (valorActual !== documentoOriginal && clienteVerificado) {
-            resetearEstadoCliente();
-        }
-    });
-
-    // === VERIFICAR CLIENTE ===
-    btnVerificar.addEventListener('click', async function() {
-        const doc = docInput.value.trim();
-        
-        if (!doc) {
-            alert('âŒ Ingresa un documento de identidad primero');
-            docInput.focus();
-            return;
-        }
-        
-        documentoOriginal = doc;
-        
-        btnVerificar.disabled = true;
-        btnVerificar.innerHTML = '<i class="bx bx-loader-alt mr-1"></i> Verificando...';
-        
-        try {
-            const response = await fetch(`{{ route('registros.lookup-cliente') }}?doc=${doc}`);
-            const data = await response.json();
-            
-            setTimeout(() => {
-                if (data.ok && data.nombre_apellido) {
-                    // Cliente encontrado
-                    clienteExistente = true;
-                    clienteVerificado = true;
-                    
-                    nomInput.value = data.nombre_apellido;
-                    nomInput.readOnly = true;
-                    nomInput.style.backgroundColor = '#f0fdf4';
-                    nomInput.style.borderColor = '#10b981';
-
-                    bloquearCamposAdicionales(true);
-                    
-                    clienteStatus.className = 'cliente-status cliente-found';
-                    clienteStatus.style.display = 'block';
-                    clienteMessage.innerHTML = `
-                        <div class="flex items-center">
-                            <i class='bx bx-check-circle text-green-600 text-lg mr-2'></i>
-                            <div>
-                                <strong class="text-green-800">Cliente encontrado:</strong> ${data.nombre_apellido}
-                                <br><small class="text-green-600">… Información completada automÃ¡ticamente</small>
-                            </div>
-                        </div>
-                    `;
-                    nombreHelp.textContent = '… Cliente existente - Campo completado automÃ¡ticamente';
-                    updateStepStatus(1, 'completed');
-                    
-                    btnVerificar.innerHTML = '<i class="bx bx-check mr-1"></i> Verificado';
-                    btnVerificar.className = 'bg-green-500 text-white px-4 py-3 rounded-lg font-medium cursor-default';
-                    toggleSeccionPenalizaciones();
-                    
-                } else {
-                    // Cliente no encontrado
-                    clienteExistente = false;
-                    clienteVerificado = true;
-                    
-                    nomInput.value = '';
-                    nomInput.readOnly = false;
-                    nomInput.style.backgroundColor = '#fffbeb';
-                    nomInput.style.borderColor = '#f59e0b';
-                    nomInput.focus();
-
-                    bloquearCamposAdicionales(false);
-                    
-                    clienteStatus.className = 'cliente-status cliente-new';
-                    clienteStatus.style.display = 'block';
-                    clienteMessage.innerHTML = `
-                        <div class="flex items-center">
-                            <i class='bx bx-user-plus text-orange-600 text-lg mr-2'></i>
-                            <div>
-                                <strong class="text-orange-800">Cliente nuevo</strong>
-                                <br><small class="text-orange-600">âš ï¸ Completa el nombre y guarda el cliente</small>
-                            </div>
-                        </div>
-                    `;
-                    nombreHelp.textContent = 'âš ï¸ Cliente nuevo - Completa el nombre y presiona "Guardar Cliente"';
-                    btnGuardarCliente.style.display = 'flex';
-                    
-                    btnVerificar.innerHTML = '<i class="bx bx-user-plus mr-1"></i> Cliente Nuevo';
-                    btnVerificar.className = 'bg-orange-500 text-white px-4 py-3 rounded-lg font-medium cursor-default';
-                }
-            }, 1000);
-            
-        } catch (error) {
-            console.error('Error al verificar cliente:', error);
-            alert('âŒ Error al verificar el cliente. Intenta nuevamente.');
-            resetearEstadoCliente();
-        }
-    });
-
-    // === GUARDAR CLIENTE NUEVO ===
-    btnGuardarCliente.addEventListener('click', async function() {
-        const doc = docInput.value.trim();
-        const nombre = nomInput.value.trim();
-        
-        if (!doc || !nombre) {
-            alert('âŒ Completa el documento y nombre antes de guardar');
-            if (!nombre) nomInput.focus();
-            return;
-        }
-        
-        if (nombre.length < 3) {
-            alert('âŒ El nombre debe tener al menos 3 caracteres');
-            nomInput.focus();
-            return;
-        }
-
-        // Obtener valores de campos adicionales
-        const estadoCivil = estadoCivilSelect.value;
-        const fechaNacimiento = fechaNacimientoInput.value;
-        const lugarNacimiento = lugarNacimientoInput.value;
-        
-        btnGuardarCliente.disabled = true;
-        btnGuardarCliente.innerHTML = '<i class="bx bx-loader-alt mr-1"></i> Guardando...';
-        
-        try {
-            const response = await fetch('{{ route("clientes.store-ajax") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({
-                    doc_identidad: doc,
-                    nombre_apellido: nombre,
-                    estado_civil: estadoCivilSelect.value,
-                    fecha_nacimiento: fechaNacimientoInput.value, 
-                    lugar_nacimiento: lugarNacimientoInput.value,
-                    sexo: sexoSelect.value,          
-                    nacionalidad: nacionalidadInput.value  
-                })
-            });
-            
-            console.log('Response status:', response.status);
-            console.log('Response headers:', response.headers.get('content-type'));
-            
-            let data;
-            const contentType = response.headers.get('content-type');
-            
-            if (contentType && contentType.includes('application/json')) {
-                data = await response.json();
-                console.log('Response data:', data);
-            } else {
-                // Si no es JSON, leer como texto para debug
-                const textResponse = await response.text();
-                console.log('Non-JSON response:', textResponse);
-                throw new Error('El servidor no devolviÃ³ una respuesta JSON vÃ¡lida');
-            }
-            
-            setTimeout(() => {
-                if (response.ok && data && data.ok) {
-                    // Cliente guardado exitosamente
-                    clienteNuevoGuardado = true;
-                    clienteExistente = true;
-                    
-                    nomInput.readOnly = true;
-                    nomInput.style.backgroundColor = '#f0fdf4';
-                    nomInput.style.borderColor = '#10b981';
-                    
-                    clienteStatus.className = 'cliente-status cliente-found';
-                    clienteMessage.innerHTML = `
-                        <div class="flex items-center">
-                            <i class='bx bx-check-circle text-green-600 text-lg mr-2'></i>
-                            <div>
-                                <strong class="text-green-800">Cliente guardado:</strong> ${nombre}
-                                <br><small class="text-green-600">Cliente registrado en la base de datos</small>
-                            </div>
-                        </div>
-                    `;
-                    nombreHelp.textContent = 'Cliente registrado exitosamente';
-                    btnGuardarCliente.style.display = 'none';
-                    updateStepStatus(1, 'completed');
-                    toggleSeccionPenalizaciones();
-                    
-                } else {
-                    alert('âŒ Error al guardar el cliente: ' + (data?.message || 'Error desconocido'));
-                    btnGuardarCliente.disabled = false;
-                    btnGuardarCliente.innerHTML = '<i class="bx bx-plus mr-1"></i> Guardar Cliente';
-                }
-            }, 1000);
-            
-        } catch (error) {
-            console.error('Error completo:', error);
-            alert('Error de conexión al guardar el cliente. Revisa la consola para más detalles.');
-            btnGuardarCliente.disabled = false;
-            btnGuardarCliente.innerHTML = '<i class="bx bx-plus mr-1"></i> Guardar Cliente';
-        }
-            
-    });
-
-    // === EVENTOS DE PAGO ===
     btnAddPago.addEventListener('click', addPagoRow);
-    
     tarifaTotalInput.addEventListener('input', calcularTotales);
-
-    // Eventos iniciales para el primer pago
     updatePagoEvents();
-    
-    // Eventos de boleta
     boletaSi.addEventListener('change', updateBoletaVisibility);
     boletaNo.addEventListener('change', updateBoletaVisibility);
-    
-    // Hacer función removePagoRow global
     window.removePagoRow = removePagoRow;
 
-    // === SISTEMA DE PASOS ===
+    // SISTEMA DE PASOS
     function updateStepStatus(stepNumber, status) {
         const step = document.getElementById(`step${stepNumber}`);
-        if (step) {
-            step.className = `step ${status}`;
-        }
+        if (step) step.className = `step ${status}`;
     }
 
-    // === VALIDACIÓN FINAL ===
-    document.getElementById('form-registro').addEventListener('submit', function(e) {
-        if (!clienteVerificado) {
+    // VALIDACIÓN FINAL
+    document.getElementById('form-registro').addEventListener('submit', function (e) {
+        if (!clienteSeleccionado) {
             e.preventDefault();
-            alert('Debes verificar el cliente primero');
-            btnVerificar.focus();
+            alert('Debes seleccionar un cliente primero');
+            searchInput.focus();
             return false;
         }
-        
-        if (!clienteExistente && !clienteNuevoGuardado) {
-            e.preventDefault();
-            alert('Para un cliente nuevo, debes guardarlo primero');
-            btnGuardarCliente.focus();
-            return false;
-        }
-        
-        const camposBasicos = ['doc_identidad', 'nombre_apellido', 'hora_ingreso', 'fecha_ingreso', 'habitacion'];
+
+        const camposBasicos = ['hora_ingreso', 'fecha_ingreso', 'habitacion'];
         for (let campo of camposBasicos) {
             const input = document.querySelector(`[name="${campo}"]`);
-            if (!input.value.trim()) {
+            if (input && !input.value.trim()) {
                 e.preventDefault();
                 alert(`El campo ${campo.replace('_', ' ')} es obligatorio`);
                 input.focus();
@@ -1196,15 +1254,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (turnoSeleccionado.value === '1') {
             const fechaReal = document.getElementById('fecha_ingreso_real').value;
-            const horaReal = document.getElementById('hora_ingreso_real').value;
-            
+            const horaReal  = document.getElementById('hora_ingreso_real').value;
             if (!fechaReal || !horaReal) {
                 e.preventDefault();
-                alert('⚠ Para turno NOCHE debes completar la fecha y hora real');
+                alert('Para turno NOCHE debes completar la fecha y hora real');
                 return false;
             }
         }
-        
+
         const tarifaTotal = parseFloat(tarifaTotalInput.value) || 0;
         if (!tarifaTotal || tarifaTotal <= 0) {
             e.preventDefault();
@@ -1212,61 +1269,54 @@ document.addEventListener('DOMContentLoaded', function() {
             tarifaTotalInput.focus();
             return false;
         }
-        
+
         let totalPagado = 0;
         let pagosValidos = 0;
-        
-        document.querySelectorAll('.pago-item').forEach((item) => {
+        document.querySelectorAll('.pago-item').forEach(item => {
             const metodo = item.querySelector('.metodo-pago').value;
-            const monto = parseFloat(item.querySelector('.monto-pago').value) || 0;
-            
-            if (metodo && monto > 0) {
-                totalPagado += monto;
-                pagosValidos++;
-            }
+            const monto  = parseFloat(item.querySelector('.monto-pago').value) || 0;
+            if (metodo && monto > 0) { totalPagado += monto; pagosValidos++; }
         });
-        
+
         if (pagosValidos === 0) {
             e.preventDefault();
             alert('Debe especificar al menos un método de pago válido');
             return false;
         }
-        
+
         if (Math.abs(tarifaTotal - totalPagado) > 0.01) {
             e.preventDefault();
             const diferencia = tarifaTotal - totalPagado;
-            if (diferencia > 0) {
-                alert(`Falta S/ ${diferencia.toFixed(2)} por completar el pago total`);
-            } else {
-                alert(`Hay un exceso de S/ ${Math.abs(diferencia).toFixed(2)} en los pagos`);
-            }
+            alert(diferencia > 0
+                ? `Falta S/ ${diferencia.toFixed(2)} por completar el pago total`
+                : `Hay un exceso de S/ ${Math.abs(diferencia).toFixed(2)} en los pagos`);
             return false;
         }
-        
-        const nombre = nomInput.value.trim();
+
+        const nombre    = nomHidden.value;
         const habitacion = document.querySelector('[name="habitacion"]').value;
-        const monto = document.querySelector('[name="monto"]').value;
-        
+        const monto     = document.querySelector('[name="monto"]').value;
+
         if (!confirm(`¿Confirmar registro?\n\nCliente: ${nombre}\nHabitación: ${habitacion}\nMonto: S/ ${monto}`)) {
             e.preventDefault();
             return false;
         }
-        
-        // Si todo está OK, permitir envío
+
         return true;
     });
 
-    // Inicializar estado de campos auxiliares
-    const turnoPreseleccionado = document.querySelector('input[name="turno"]:checked');
-    if (turnoPreseleccionado && turnoPreseleccionado.value === '1') {
-        document.getElementById('campos-auxiliares-noche').style.display = 'block';
-        document.getElementById('fecha_ingreso_real').required = true;
-        document.getElementById('hora_ingreso_real').required = true;
-    }
+    // PENALIZACIONES
 
-    // Función para mostrar/ocultar sección de penalizaciones
+    const seccionPenalizaciones  = document.getElementById('seccion-penalizaciones');
+    const btnAgregarPenalizacion = document.getElementById('btn-agregar-penalizacion');
+    const modalPenalizacion      = document.getElementById('modal-penalizacion');
+    const formPenalizacion       = document.getElementById('form-penalizacion');
+    const listaPenalizaciones    = document.getElementById('lista-penalizaciones');
+    const resumenPenalizaciones  = document.getElementById('resumen-penalizaciones');
+    const totalPenalizacionesSpan = document.getElementById('total-penalizaciones');
+
     function toggleSeccionPenalizaciones() {
-        if (clienteVerificado) {
+        if (clienteSeleccionado) {
             seccionPenalizaciones.style.display = 'block';
             cargarMetodosPagoPenalizaciones();
         } else {
@@ -1274,44 +1324,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Cargar métodos de pago para penalizaciones
     async function cargarMetodosPagoPenalizaciones() {
         try {
             const response = await fetch('{{ route("penalizaciones.metodos-pago") }}');
-            const metodos = await response.json();
-            
-            const select = document.getElementById('metodo-pago-penalizacion');
+            const metodos  = await response.json();
+            const select   = document.getElementById('metodo-pago-penalizacion');
             select.innerHTML = '<option value="">Seleccionar método...</option>';
-            
-            metodos.forEach(metodo => {
-                const option = document.createElement('option');
-                option.value = metodo.id_met_pago;
-                option.textContent = metodo.met_pago;
-                select.appendChild(option);
+            metodos.forEach(m => {
+                const opt  = document.createElement('option');
+                opt.value  = m.id_met_pago;
+                opt.textContent = m.met_pago;
+                select.appendChild(opt);
             });
-        } catch (error) {
-            console.error('Error al cargar métodos de pago:', error);
+        } catch (err) {
+            console.error('Error cargando métodos pago:', err);
         }
     }
 
-    // Agregar penalización
     function agregarPenalizacion(monto, metodoId, metodoNombre) {
-        const penalizacion = {
-            id: penalizacionIndex++,
-            monto: parseFloat(monto),
-            metodo_id: metodoId,
-            metodo_nombre: metodoNombre
-        };
-        
-        penalizaciones.push(penalizacion);
+        penalizaciones.push({ id: penalizacionIndex++, monto: parseFloat(monto), metodo_id: metodoId, metodo_nombre: metodoNombre });
         renderizarPenalizaciones();
         actualizarTotalPenalizaciones();
     }
 
-    // Renderizar lista de penalizaciones
     function renderizarPenalizaciones() {
         listaPenalizaciones.innerHTML = '';
-        
         penalizaciones.forEach((pen, index) => {
             const div = document.createElement('div');
             div.className = 'flex items-center justify-between p-3 bg-white rounded-lg border border-red-200';
@@ -1325,67 +1362,50 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="flex items-center space-x-3">
                     <span class="font-bold text-red-600">S/ ${pen.monto.toFixed(2)}</span>
-                    <button type="button" onclick="eliminarPenalizacion(${pen.id})" 
+                    <button type="button" onclick="eliminarPenalizacion(${pen.id})"
                             class="text-red-500 hover:text-red-700">
                         <i class='bx bx-trash'></i>
                     </button>
                 </div>
                 <input type="hidden" name="penalizaciones[${pen.id}][monto]" value="${pen.monto}">
-                <input type="hidden" name="penalizaciones[${pen.id}][id_met_pago]" value="${pen.metodo_id}">
-            `;
+                <input type="hidden" name="penalizaciones[${pen.id}][id_met_pago]" value="${pen.metodo_id}">`;
             listaPenalizaciones.appendChild(div);
         });
     }
 
-    // Actualizar total de penalizaciones
     function actualizarTotalPenalizaciones() {
-        const total = penalizaciones.reduce((sum, pen) => sum + pen.monto, 0);
+        const total = penalizaciones.reduce((sum, p) => sum + p.monto, 0);
         totalPenalizacionesSpan.textContent = `S/ ${total.toFixed(2)}`;
         resumenPenalizaciones.style.display = total > 0 ? 'block' : 'none';
     }
 
-    // Eliminar penalización
     function eliminarPenalizacion(id) {
-        penalizaciones = penalizaciones.filter(pen => pen.id !== id);
+        penalizaciones = penalizaciones.filter(p => p.id !== id);
         renderizarPenalizaciones();
         actualizarTotalPenalizaciones();
     }
 
-    // Eventos de penalizaciones
-    btnAgregarPenalizacion.addEventListener('click', () => {
-        modalPenalizacion.classList.remove('hidden');
-    });
+    btnAgregarPenalizacion.addEventListener('click', () => modalPenalizacion.classList.remove('hidden'));
+    document.getElementById('btn-cerrar-modal-penalizacion').addEventListener('click', () => modalPenalizacion.classList.add('hidden'));
+    document.getElementById('btn-cancelar-penalizacion').addEventListener('click', () => modalPenalizacion.classList.add('hidden'));
 
-    document.getElementById('btn-cerrar-modal-penalizacion').addEventListener('click', () => {
-        modalPenalizacion.classList.add('hidden');
-    });
-
-    document.getElementById('btn-cancelar-penalizacion').addEventListener('click', () => {
-        modalPenalizacion.classList.add('hidden');
-    });
-
-    formPenalizacion.addEventListener('submit', (e) => {
+    formPenalizacion.addEventListener('submit', e => {
         e.preventDefault();
-        
-        const monto = document.getElementById('monto-penalizacion').value;
+        const monto        = document.getElementById('monto-penalizacion').value;
         const metodoSelect = document.getElementById('metodo-pago-penalizacion');
-        const metodoId = metodoSelect.value;
+        const metodoId     = metodoSelect.value;
         const metodoNombre = metodoSelect.options[metodoSelect.selectedIndex].text;
-        
+
         if (monto && metodoId) {
             agregarPenalizacion(monto, metodoId, metodoNombre);
-            
-            // Limpiar formulario y cerrar modal
-            document.getElementById('monto-penalizacion').value = '';
+            document.getElementById('monto-penalizacion').value       = '';
             document.getElementById('metodo-pago-penalizacion').value = '';
             modalPenalizacion.classList.add('hidden');
         }
     });
 
-    // Hacer función global
     window.eliminarPenalizacion = eliminarPenalizacion;
-
-});
+}); 
 </script>
 
 <!-- Boxicons -->

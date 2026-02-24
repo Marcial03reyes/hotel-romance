@@ -20,7 +20,8 @@ class DimRegistroCliente extends Model
         'lugar_nacimiento',
         'nacionalidad',
         'sexo',                    
-        'profesion_ocupacion'   
+        'profesion_ocupacion',
+        'tipo_doc'    
     ];
 
     // Cast para convertir fecha_nacimiento a Carbon automáticamente
@@ -70,5 +71,11 @@ class DimRegistroCliente extends Model
     public function setLugarNacimientoAttribute($value)
     {
         $this->attributes['lugar_nacimiento'] = $value ? ucwords(strtolower(trim($value))) : null;
+    }
+
+    // MUTATOR: Normalizar tipo_doc antes de guardar
+    public function setTipoDocAttribute($value)
+    {
+        $this->attributes['tipo_doc'] = $value ? strtoupper(trim($value)) : 'DNI';
     }
 }

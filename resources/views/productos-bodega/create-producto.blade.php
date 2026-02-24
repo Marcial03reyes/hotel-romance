@@ -122,6 +122,25 @@
                             Precio sugerido de venta. Puede modificarse al registrar cada venta.
                         </p>
                     </div>
+
+                    <!-- Stock Inicial -->
+                    <div class="mt-6">
+                        <label for="stock_inicial" class="block text-sm font-medium text-gray-700 mb-2">
+                            Stock Inicial
+                        </label>
+                        <div class="relative max-w-xs">
+                            <input type="number" 
+                                id="stock_inicial" 
+                                name="stock_inicial" 
+                                value="{{ old('stock_inicial', 0) }}"
+                                min="0"
+                                max="9999"
+                                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm">
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">
+                            Unidades que ya tenías antes de registrar compras. Déjalo en 0 si empiezas desde cero.
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Información adicional -->

@@ -89,8 +89,9 @@ class FactRegistroClienteController extends Controller
                 'fr.fecha_ingreso_real',
                 'fr.hora_ingreso_real',                      
             )
-            ->orderByDesc('fr.id_estadia')
-            ->get();
+            ->orderByDesc('fr.fecha_ingreso')
+            ->orderByDesc('fr.hora_ingreso')
+            ->paginate(20);
 
         return view('registros.index', compact('registros'));
     }
@@ -226,11 +227,27 @@ class FactRegistroClienteController extends Controller
             // 1) Cliente
             $doc = $request->input('doc_identidad');
             $cliente = DimRegistroCliente::find($doc);
-            
+
             if (!$cliente) {
                 $cliente = new DimRegistroCliente();
                 $cliente->doc_identidad = $doc;
                 $cliente->nombre_apellido = $request->input('nombre_apellido');
+                $cliente->tipo_doc = $request->input('tipo_doc');
+                $cliente->sexo = $request->input('sexo');
+                $cliente->nacionalidad = $request->input('nacionalidad');
+                $cliente->estado_civil = $request->input('estado_civil');
+                $cliente->fecha_nacimiento = $request->input('fecha_nacimiento');
+                $cliente->lugar_nacimiento = $request->input('lugar_nacimiento');
+                $cliente->save();
+            } else {
+                // Actualizar solo campos que estaban vacíos
+                $camposActualizables = ['sexo', 'nacionalidad', 'estado_civil', 
+                                        'fecha_nacimiento', 'lugar_nacimiento', 'tipo_doc'];
+                foreach ($camposActualizables as $campo) {
+                    if (empty($cliente->$campo) && $request->filled($campo)) {
+                        $cliente->$campo = $request->input($campo);
+                    }
+                }
                 $cliente->save();
             }
 
@@ -367,6 +384,7 @@ class FactRegistroClienteController extends Controller
                 'lugar_nacimiento' => 'nullable|string|max:100',
                 'sexo' => 'nullable|string|max:1',              
                 'nacionalidad' => 'nullable|string|max:50',
+                'tipo_doc' => 'nullable|string|in:DNI,CE,RUC,PAS',
             ]);
 
             \Log::info('Validación pasó correctamente');
@@ -379,6 +397,7 @@ class FactRegistroClienteController extends Controller
             $cliente->lugar_nacimiento = $request->input('lugar_nacimiento');
             $cliente->sexo = $request->input('sexo');
             $cliente->nacionalidad = $request->input('nacionalidad');
+            $cliente->tipo_doc = $request->input('tipo_doc');
             $cliente->save();
 
             return response()->json([
@@ -420,24 +439,22 @@ class FactRegistroClienteController extends Controller
      */
     public function lookupCliente(Request $request)
     {
-        $doc = $request->query('doc');
+        $q = $request->query('q');
         
-        if (!$doc) {
-            return response()->json(['ok' => false, 'message' => 'Documento requerido']);
+        if (!$q || strlen($q) < 2) {
+            return response()->json([]);
         }
 
-        $cliente = DimRegistroCliente::where('doc_identidad', $doc)->first();
-        
-        if (!$cliente) {
-            return response()->json(['ok' => false, 'message' => 'Cliente no encontrado']);
-        }
+        $clientes = DimRegistroCliente::where('doc_identidad', 'LIKE', $q . '%')
+            ->orWhere('nombre_apellido', 'LIKE', '%' . $q . '%')
+            ->orderBy('nombre_apellido')
+            ->limit(10)
+            ->get(['doc_identidad', 'nombre_apellido', 'sexo', 'nacionalidad', 
+                'estado_civil', 'fecha_nacimiento', 'lugar_nacimiento', 'tipo_doc']);
 
-        return response()->json([
-            'ok' => true,
-            'doc_identidad' => $cliente->doc_identidad,
-            'nombre_apellido' => $cliente->nombre_apellido,
-        ]);
+        return response()->json($clientes);
     }
+    
 
     private function getEstadoCivilCompleto($inicial)
     {

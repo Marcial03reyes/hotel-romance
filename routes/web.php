@@ -73,19 +73,16 @@ Route::middleware('auth')->group(function () {
         ->name('api.dashboard.ingresos-turno');
     Route::get('api/dashboard/ocupacion', [App\Http\Controllers\DashboardController::class, 'getOcupacionDinamica'])
         ->name('api.dashboard.ocupacion');
-
-    /*
-    |----------------------------------------------------------------------
-    | GESTIÓN DE HOTEL - ACCESO PARA TODOS
-    |----------------------------------------------------------------------
-    */
     
     // ✅ REGISTRO DE HABITACIONES (Estadías) - TODOS pueden acceder
     Route::prefix('registros')->name('registros.')->group(function () {
-        // ✅ LOOKUP cliente (DENTRO del grupo, más organizado)
+        // LOOKUP cliente (DENTRO del grupo, más organizado)
         Route::get('lookup-cliente', [FactRegistroClienteController::class, 'lookupCliente'])
              ->name('lookup-cliente');
-        
+
+        Route::get('export-excel', [FactRegistroClienteController::class, 'exportExcel'])->name('export.excel');
+        Route::get('export-pdf', [FactRegistroClienteController::class, 'exportPDF'])->name('export.pdf');
+
         // ✅ RUTAS BÁSICAS DE REGISTRO
         Route::get('/', [FactRegistroClienteController::class, 'index'])->name('index');
         Route::get('create', [FactRegistroClienteController::class, 'create'])->name('create');
@@ -103,21 +100,24 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id_estadia}', [PenalidadController::class, 'store'])->name('store');
         Route::delete('/{id_penalidad}', [PenalidadController::class, 'destroy'])->name('destroy');
     });
-    
-    Route::get('registros/export-excel', [FactRegistroClienteController::class, 'exportExcel'])->name('registros.export.excel');
-    Route::get('registros/export-pdf', [FactRegistroClienteController::class, 'exportPDF'])->name('registros.export.pdf');
 
     // ✅ CLIENTES - TODOS pueden acceder
     Route::resource('clientes', DimRegistroClienteController::class);
     Route::post('/clientes/store-ajax', [FactRegistroClienteController::class, 'storeCliente'])
         ->name('clientes.store-ajax');
 
-    /*
-    |----------------------------------------------------------------------
-    | CONFIGURACIÓN DE PERFIL - TODOS pueden acceder
-    |----------------------------------------------------------------------
-    */
-    
+    // PRODUCTOS HOTEL - acceso para todos
+    Route::prefix('productos-hotel')->name('productos-hotel.')->group(function () {
+        Route::get('/', [DimProductoHotelController::class, 'index'])->name('index');
+        Route::get('{id}/historial', [DimProductoHotelController::class, 'historial'])->name('historial');
+        Route::get('{id}/compra/create', [DimProductoHotelController::class, 'createCompra'])->name('create-compra');
+        Route::post('{id}/compra', [DimProductoHotelController::class, 'storeCompra'])->name('store-compra');
+    });
+
+    Route::resource('pagos-productos', FactPagoProdController::class);
+    Route::get('api/productos/{id}/precio', [FactPagoProdController::class, 'getPrecioProducto']);
+
+    // CONFIGURACIÓN DE PERFIL - TODOS pueden acceder
     Route::prefix('profile')->name('profile.')->group(function () {
         Route::get('/', [ProfileController::class, 'show'])->name('show');
         Route::patch('/name', [ProfileController::class, 'updateName'])->name('update.name');
@@ -212,57 +212,14 @@ Route::middleware('auth')->group(function () {
         // Lista principal de productos
         Route::get('/', [ProductosBodegaController::class, 'index'])->name('index');
         
-        // Crear nuevo producto
-        Route::get('producto/create', [ProductosBodegaController::class, 'createProducto'])->name('create-producto');
-        Route::post('producto', [ProductosBodegaController::class, 'storeProducto'])->name('store-producto');
-        Route::put('producto/{id}', [ProductosBodegaController::class, 'updateProducto'])->name('update-producto');
-        Route::get('producto/{id}/edit', [ProductosBodegaController::class, 'editProducto'])->name('edit-producto');
-        Route::delete('producto/{id}', [ProductosBodegaController::class, 'destroyProducto'])->name('destroy-producto');
-
-        // Editar producto
-        Route::get('{id}/edit', [ProductosBodegaController::class, 'editProducto'])->name('edit-producto');
-        Route::put('{id}', [ProductosBodegaController::class, 'updateProducto'])->name('update-producto');
-        Route::delete('{id}', [ProductosBodegaController::class, 'destroyProducto'])->name('destroy-producto');
-        
         // Historial de compras de un producto
         Route::get('{id}/historial', [ProductosBodegaController::class, 'historial'])->name('historial');
         
         // Registrar nueva compra
         Route::get('{id}/compra/create', [ProductosBodegaController::class, 'createCompra'])->name('create-compra');
         Route::post('{id}/compra', [ProductosBodegaController::class, 'storeCompra'])->name('store-compra');
-        
-        // Editar/eliminar compra específica
-        Route::get('{id}/compra/{compraId}/edit', [ProductosBodegaController::class, 'editCompra'])->name('edit-compra');
-        Route::put('{id}/compra/{compraId}', [ProductosBodegaController::class, 'updateCompra'])->name('update-compra');
-        Route::delete('{id}/compra/{compraId}', [ProductosBodegaController::class, 'destroyCompra'])->name('destroy-compra');
     });
     
-    // PRODUCTOS HOTEL (Completo con DimProductoHotelController)
-    Route::prefix('productos-hotel')->name('productos-hotel.')->group(function () {
-        // Lista principal de productos
-        Route::get('/', [DimProductoHotelController::class, 'index'])->name('index');
-        
-        // Crear nuevo producto
-        Route::get('producto/create', [DimProductoHotelController::class, 'createProducto'])->name('create-producto');
-        Route::post('producto', [DimProductoHotelController::class, 'storeProducto'])->name('store-producto');
-        
-        // Editar producto
-        Route::get('{id}/edit', [DimProductoHotelController::class, 'editProducto'])->name('edit-producto');
-        Route::put('{id}', [DimProductoHotelController::class, 'updateProducto'])->name('update-producto');
-        Route::delete('{id}', [DimProductoHotelController::class, 'destroyProducto'])->name('destroy-producto');
-        
-        // Historial de compras de un producto
-        Route::get('{id}/historial', [DimProductoHotelController::class, 'historial'])->name('historial');
-        
-        // Registrar nueva compra
-        Route::get('{id}/compra/create', [DimProductoHotelController::class, 'createCompra'])->name('create-compra');
-        Route::post('{id}/compra', [DimProductoHotelController::class, 'storeCompra'])->name('store-compra');
-        
-        // Editar/eliminar compra específica
-        Route::get('{id}/compra/{compraId}/edit', [DimProductoHotelController::class, 'editCompra'])->name('edit-compra');
-        Route::put('{id}/compra/{compraId}', [DimProductoHotelController::class, 'updateCompra'])->name('update-compra');
-        Route::delete('{id}/compra/{compraId}', [DimProductoHotelController::class, 'destroyCompra'])->name('destroy-compra');
-    });
     
     // COMPRAS INTERNAS (Para mantener compatibilidad con rutas existentes)
     Route::resource('compras-internas', FactCompraInternaController::class);
@@ -314,17 +271,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // PAGOS DE HABITACIÓN
     Route::resource('pagos-habitacion', FactPagoHabController::class);
     
-    // PAGOS DE PRODUCTOS
-    Route::resource('pagos-productos', FactPagoProdController::class);
-
-    Route::get('api/productos/{id}/precio', [FactPagoProdController::class, 'getPrecioProducto']);
-
-    /*
-    |----------------------------------------------------------------------
-    | ADMINISTRACIÓN - SOLO ADMINISTRADORES
-    |----------------------------------------------------------------------
-    */
-    
     // TRABAJADORES
     Route::resource('trabajadores', FactTrabajadorController::class)
         ->parameters(['trabajadores' => 'dni']);
@@ -333,6 +279,35 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('horarios', FactHorarioController::class);
     Route::post('horarios/asignar-completo', [FactHorarioController::class, 'asignarHorarioCompleto'])->name('horarios.asignar-completo');
 
+    Route::prefix('productos-bodega')->name('productos-bodega.')->group(function () {
+        // Gestión de productos (solo admin)
+        Route::get('producto/create', [ProductosBodegaController::class, 'createProducto'])->name('create-producto');
+        Route::post('producto', [ProductosBodegaController::class, 'storeProducto'])->name('store-producto');
+        Route::get('producto/{id}/edit', [ProductosBodegaController::class, 'editProducto'])->name('edit-producto');
+        Route::put('producto/{id}', [ProductosBodegaController::class, 'updateProducto'])->name('update-producto');
+        Route::delete('producto/{id}', [ProductosBodegaController::class, 'destroyProducto'])->name('destroy-producto');
+
+        // Gestión de compras (solo admin)
+        Route::get('{id}/compra/{compraId}/edit', [ProductosBodegaController::class, 'editCompra'])->name('edit-compra');
+        Route::put('{id}/compra/{compraId}', [ProductosBodegaController::class, 'updateCompra'])->name('update-compra');
+        Route::delete('{id}/compra/{compraId}', [ProductosBodegaController::class, 'destroyCompra'])->name('destroy-compra');
+    });
+
+    // PRODUCTOS HOTEL - solo admin
+    Route::prefix('productos-hotel')->name('productos-hotel.')->group(function () {
+        // Gestión de productos (solo admin)
+        Route::get('producto/create', [DimProductoHotelController::class, 'createProducto'])->name('create-producto');
+        Route::post('producto', [DimProductoHotelController::class, 'storeProducto'])->name('store-producto');
+        Route::get('{id}/edit', [DimProductoHotelController::class, 'editProducto'])->name('edit-producto');
+        Route::put('{id}', [DimProductoHotelController::class, 'updateProducto'])->name('update-producto');
+        Route::delete('{id}', [DimProductoHotelController::class, 'destroyProducto'])->name('destroy-producto');
+
+        // Editar/eliminar compras (solo admin)
+        Route::get('{id}/compra/{compraId}/edit', [DimProductoHotelController::class, 'editCompra'])->name('edit-compra');
+        Route::put('{id}/compra/{compraId}', [DimProductoHotelController::class, 'updateCompra'])->name('update-compra');
+        Route::delete('{id}/compra/{compraId}', [DimProductoHotelController::class, 'destroyCompra'])->name('destroy-compra');
+    });
+    
     /*
     |----------------------------------------------------------------------
     | CONFIGURACIÓN Y CATÁLOGOS - SOLO ADMINISTRADORES

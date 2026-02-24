@@ -361,20 +361,17 @@ class ProductosBodegaController extends Controller
                 'max:50',
                 'unique:dim_productos_bodega,nombre'
             ],
+
             'stock_inicial' => [  
-                'required',
+                'nullable',
                 'integer',
                 'min:0',
                 'max:9999'
-            ]
+            ],
         ], [
             'nombre.required' => 'El nombre del producto es obligatorio',
             'nombre.max' => 'El nombre no puede exceder 50 caracteres',
-            'nombre.unique' => 'Ya existe un producto con este nombre',
-            'stock_inicial.required' => 'El stock inicial es obligatorio',  // ← AGREGAR
-            'stock_inicial.integer' => 'El stock inicial debe ser un número entero',  // ← AGREGAR
-            'stock_inicial.min' => 'El stock inicial no puede ser negativo',  // ← AGREGAR
-            'stock_inicial.max' => 'El stock inicial no puede exceder 9999'  // ← AGREGAR
+            'nombre.unique' => 'Ya existe un producto con este nombre'
         ]);
 
         if ($validator->fails()) {
@@ -388,7 +385,7 @@ class ProductosBodegaController extends Controller
             $producto = DimProductoBodega::create([
                 'nombre' => trim($request->nombre),
                 'precio_actual' => $request->precio_actual,
-                'stock_inicial' => $request->stock_inicial
+                'stock_inicial' => $request->stock_inicial ?? 0
             ]);
 
             return redirect()
@@ -584,12 +581,6 @@ class ProductosBodegaController extends Controller
                 'numeric',
                 'min:0.01',
                 'max:9999.99'
-            ],
-            'stock_inicial' => [ 
-                'required',
-                'integer',
-                'min:0',
-                'max:9999'
             ]
         ], [
             'nombre.required' => 'El nombre del producto es obligatorio',
@@ -612,7 +603,7 @@ class ProductosBodegaController extends Controller
             $producto->update([
                 'nombre' => trim($request->nombre),
                 'precio_actual' => $request->precio_actual,
-                'stock_inicial' => $request->stock_inicial
+                'stock_inicial' => $request->stock_inicial ?? $producto->stock_inicial
             ]);
 
             return redirect()

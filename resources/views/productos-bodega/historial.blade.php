@@ -32,11 +32,13 @@
                 </div>
                 <div class="flex space-x-3">
                     <!-- BOTÓN que abre el modal -->
+                    @if(auth()->user()->role === 'admin')
                     <button onclick="openStockModal()" 
                             class="inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-purple-700 transition-colors">
                         <i class='bx bx-edit mr-2'></i>
                         Ajustar Stock Inicial
                     </button>
+                    @endif
 
                     <a href="{{ route('productos-bodega.create-compra', $producto->id_prod_bod) }}" 
                        class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-green-700 transition-colors">
@@ -161,9 +163,13 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Proveedor
                             </th>
+
+                            @if(auth()->user()->role === 'admin')
                             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Acciones
                             </th>
+                            @endif
+
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -192,6 +198,8 @@
                                         {{ $compra->proveedor ?: 'No especificado' }}
                                     </div>
                                 </td>
+
+                                @if(auth()->user()->role === 'admin')
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div class="flex items-center justify-end space-x-2">
                                         <a href="{{ route('productos-bodega.edit-compra', [$producto->id_prod_bod, $compra->id_compra_bodega]) }}" 
@@ -211,6 +219,7 @@
                                         </form>
                                     </div>
                                 </td>
+                                @endif
                             </tr>
                         @empty
                             <tr>
@@ -236,6 +245,7 @@
 </div>
 
 <!-- MODAL (agregar al final de la vista) -->
+@if(auth()->user()->role === 'admin')
 <div id="stockModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
     <div class="flex items-center justify-center min-h-screen p-4">
         <div class="bg-white rounded-lg p-6 w-full max-w-md">
@@ -269,8 +279,9 @@
 </div>
 
 <script>
+
 function openStockModal() { document.getElementById('stockModal').classList.remove('hidden'); }
 function closeStockModal() { document.getElementById('stockModal').classList.add('hidden'); }
 </script>
-
+@endif
 @endsection

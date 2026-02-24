@@ -264,11 +264,11 @@
         <!-- Estadísticas compactas -->
         <div class="lg:col-span-2 grid grid-cols-2 gap-2">
             <div class="bg-white rounded-lg border p-3 text-center">
-                <div class="text-lg font-bold stats-total">{{ count($registros) }}</div>
+                <div class="text-lg font-bold stats-total">{{ $registros->total() ?? $registros->count() }}</div>
                 <div class="text-xs text-gray-600">Total</div>
             </div>
             <div class="bg-white rounded-lg border p-3 text-center">
-                <div class="text-lg font-bold stats-boleta">{{ $registros->where('boleta', 'SI')->count() }}</div>
+                <div class="text-lg font-bold stats-boleta">{{ $registros->getCollection()->where('boleta', 'SI')->count() }}</div>
                 <div class="text-xs text-gray-600">C/Boleta</div>
             </div>
         </div>
@@ -436,7 +436,42 @@
             </table>
         </div>
     </div>
-</div>
+
+        <!-- Paginación -->
+        @if($registros->hasPages())
+        <div class="mt-4 flex items-center justify-between px-2">
+            <div class="text-sm text-gray-600">
+                Total {{ $registros->total() }}
+            </div>
+            <div class="flex items-center gap-1">
+                {{-- Anterior --}}
+                @if($registros->onFirstPage())
+                    <span class="px-3 py-1 text-gray-300 cursor-not-allowed">‹</span>
+                @else
+                    <a href="{{ $registros->previousPageUrl() }}" class="px-3 py-1 text-gray-600 hover:text-blue-600 transition-colors">‹</a>
+                @endif
+
+                {{-- Páginas --}}
+                @foreach($registros->getUrlRange(1, $registros->lastPage()) as $page => $url)
+                    @if($page == $registros->currentPage())
+                        <span class="px-3 py-1 font-bold text-blue-600 border-b-2 border-blue-600">{{ $page }}</span>
+                    @elseif($page == 1 || $page == $registros->lastPage() || abs($page - $registros->currentPage()) <= 2)
+                        <a href="{{ $url }}" class="px-3 py-1 text-gray-600 hover:text-blue-600 transition-colors">{{ $page }}</a>
+                    @elseif(abs($page - $registros->currentPage()) == 3)
+                        <span class="px-2 text-gray-400">…</span>
+                    @endif
+                @endforeach
+
+                {{-- Siguiente --}}
+                @if($registros->hasMorePages())
+                    <a href="{{ $registros->nextPageUrl() }}" class="px-3 py-1 text-gray-600 hover:text-blue-600 transition-colors">›</a>
+                @else
+                    <span class="px-3 py-1 text-gray-300 cursor-not-allowed">›</span>
+                @endif
+            </div>
+        </div>
+        @endif
+    </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
