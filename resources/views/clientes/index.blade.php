@@ -73,6 +73,56 @@
         background: linear-gradient(135deg, var(--tertiary-color), var(--primary-color));
         color: white;
     }
+
+    .filter-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        z-index: 50;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        min-width: 160px;
+        padding: 0.5rem;
+    }
+
+    .filter-dropdown label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0.5rem;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        font-size: 0.8rem;
+        color: #374151;
+        transition: background 0.15s;
+    }
+
+    .filter-dropdown label:hover {
+        background: #f4f8fc;
+        color: var(--accent-color);
+    }
+
+    .th-filterable {
+        position: relative;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .th-filterable:hover {
+        background: rgba(255,255,255,0.15);
+    }
+
+    .filter-indicator {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        background: #fbbf24;
+        border-radius: 50%;
+        margin-left: 4px;
+        vertical-align: middle;
+    }
 </style>
 
 <div class="container mx-auto py-6 px-4">
@@ -142,11 +192,48 @@
                 <thead class="bg-gradient-to-r from-blue-600 to-blue-800 text-white sticky top-0 z-10" style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));">
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Acciones</th>
+                        <th class="th-filterable px-6 py-4 text-left text-xs font-medium uppercase tracking-wider" data-col="tipo_doc">
+                            Tipo Doc <i class='bx bx-filter-alt ml-1'></i>
+                            <span class="filter-indicator" id="ind-tipo_doc" style="display:none"></span>
+                            <div class="filter-dropdown" id="drop-tipo_doc" style="display:none">
+                                <label><input type="checkbox" value="dni" data-col="tipo_doc"> DNI</label>
+                                <label><input type="checkbox" value="ce" data-col="tipo_doc"> CE</label>
+                                <label><input type="checkbox" value="ruc" data-col="tipo_doc"> RUC</label>
+                                <label><input type="checkbox" value="pas" data-col="tipo_doc"> PASAPORTE</label>
+                            </div>
+                        </th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Documento</th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Nombre y Apellido</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Sexo</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Nacionalidad</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Estado Civil</th>
+                        <th class="th-filterable px-6 py-4 text-left text-xs font-medium uppercase tracking-wider" data-col="sexo">
+                            Sexo <i class='bx bx-filter-alt ml-1'></i>
+                            <span class="filter-indicator" id="ind-sexo" style="display:none"></span>
+                            <div class="filter-dropdown" id="drop-sexo" style="display:none">
+                                <label><input type="checkbox" value="m" data-col="sexo"> M</label>
+                                <label><input type="checkbox" value="f" data-col="sexo"> F</label>
+                            </div>
+                        </th>
+                        <th class="th-filterable px-6 py-4 text-left text-xs font-medium uppercase tracking-wider" data-col="nacionalidad">
+                            Nacionalidad <i class='bx bx-filter-alt ml-1'></i>
+                            <span class="filter-indicator" id="ind-nacionalidad" style="display:none"></span>
+                            <div class="filter-dropdown" id="drop-nacionalidad" style="display:none">
+                                @php
+                                    $nacionalidades = $clientes->pluck('nacionalidad')->filter()->unique()->sort()->values();
+                                @endphp
+                                @foreach($nacionalidades as $nac)
+                                    <label><input type="checkbox" value="{{ strtolower($nac) }}" data-col="nacionalidad"> {{ $nac }}</label>
+                                @endforeach
+                            </div>
+                        </th>
+                        <th class="th-filterable px-6 py-4 text-left text-xs font-medium uppercase tracking-wider" data-col="estado_civil">
+                            Estado Civil <i class='bx bx-filter-alt ml-1'></i>
+                            <span class="filter-indicator" id="ind-estado_civil" style="display:none"></span>
+                            <div class="filter-dropdown" id="drop-estado_civil" style="display:none">
+                                <label><input type="checkbox" value="s" data-col="estado_civil"> Soltero</label>
+                                <label><input type="checkbox" value="c" data-col="estado_civil"> Casado</label>
+                                <label><input type="checkbox" value="d" data-col="estado_civil"> Divorciado</label>
+                                <label><input type="checkbox" value="v" data-col="estado_civil"> Viudo</label>
+                            </div>
+                        </th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Fecha Nacimiento</th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Lugar Nacimiento</th>
                         <th class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Profesión</th>
@@ -154,7 +241,9 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200" id="tableBody">
                     @forelse($clientes as $c)
-                        <tr class="table-row border-l-4 border-transparent hover:border-blue-400" data-search="{{ strtolower($c->nombre_apellido . ' ' . $c->doc_identidad . ' ' . $c->sexo . ' ' . $c->nacionalidad . ' ' . $c->profesion_ocupacion) }}" style="--hover-border-color: var(--primary-color);">
+                        <tr class="table-row border-l-4 border-transparent hover:border-blue-400"
+                            data-search="{{ strtolower($c->nombre_apellido . ' ' . $c->doc_identidad . ' ' . $c->sexo . ' ' . $c->nacionalidad . ' ' . $c->profesion_ocupacion) }}"
+                            data-filter="{{ json_encode(['tipo_doc' => strtolower($c->tipo_doc ?? 'dni'), 'sexo' => strtolower($c->sexo ?? ''), 'nacionalidad' => strtolower($c->nacionalidad ?? ''), 'estado_civil' => strtolower($c->estado_civil ?? '')]) }}">
                             <!-- ACCIONES (primera columna) -->
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center space-x-2">
@@ -176,7 +265,12 @@
                                     </form>
                                 </div>
                             </td>
-                            
+
+                            <!-- TIPO DOC -->
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                {{ $c->tipo_doc ?? 'DNI' }}
+                            </td>
+
                             <!-- DOCUMENTO -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="badge badge-documento font-mono">{{ $c->doc_identidad }}</span>
@@ -237,50 +331,117 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
+
+    // ==========================================
+    // BÚSQUEDA EN TIEMPO REAL
+    // ==========================================
     const searchInput = document.getElementById('searchInput');
-    const tableBody = document.getElementById('tableBody');
-    
-    // Búsqueda en tiempo real
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        const rows = tableBody.querySelectorAll('tr[data-search]');
-        
-        rows.forEach(row => {
-            const searchData = row.getAttribute('data-search');
-            if (searchData.includes(searchTerm)) {
-                row.style.display = '';
+    const tableBody   = document.getElementById('tableBody');
+
+    searchInput.addEventListener('input', aplicarFiltros);
+
+    // ==========================================
+    // FILTROS POR COLUMNA
+    // ==========================================
+    const filtrosActivos = {}; // { col: Set(valores) }
+
+    // Abrir/cerrar dropdown al click en th
+    document.querySelectorAll('.th-filterable').forEach(th => {
+        th.addEventListener('click', function (e) {
+            // Si el click es en un checkbox, no cerrar
+            if (e.target.type === 'checkbox') return;
+
+            const col  = this.dataset.col;
+            const drop = document.getElementById('drop-' + col);
+
+            // Cerrar todos los demás
+            document.querySelectorAll('.filter-dropdown').forEach(d => {
+                if (d !== drop) d.style.display = 'none';
+            });
+
+            drop.style.display = drop.style.display === 'none' ? 'block' : 'none';
+            e.stopPropagation();
+        });
+    });
+
+    // Cerrar dropdowns al click fuera
+    document.addEventListener('click', function () {
+        document.querySelectorAll('.filter-dropdown').forEach(d => {
+            d.style.display = 'none';
+        });
+    });
+
+    // Escuchar cambios en checkboxes
+    document.querySelectorAll('.filter-dropdown input[type=checkbox]').forEach(cb => {
+        cb.addEventListener('change', function () {
+            const col = this.dataset.col;
+
+            if (!filtrosActivos[col]) filtrosActivos[col] = new Set();
+
+            if (this.checked) {
+                filtrosActivos[col].add(this.value);
             } else {
-                row.style.display = 'none';
+                filtrosActivos[col].delete(this.value);
             }
+
+            // Mostrar/ocultar indicador
+            const ind = document.getElementById('ind-' + col);
+            if (ind) ind.style.display = filtrosActivos[col].size > 0 ? 'inline-block' : 'none';
+
+            aplicarFiltros();
         });
     });
-    
-    // Confirmación para eliminar individual
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('delete-button') || e.target.closest('.delete-button')) {
-            e.preventDefault();
-            const button = e.target.classList.contains('delete-button') ? e.target : e.target.closest('.delete-button');
-            const clienteName = button.getAttribute('data-cliente');
-            const form = button.closest('.delete-form');
-            
-            if (confirm(`¿Eliminar al cliente ${clienteName}?`)) {
-                form.submit();
+
+    // ==========================================
+    // APLICAR FILTROS (búsqueda + dropdowns)
+    // ==========================================
+    function aplicarFiltros() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const rows = tableBody.querySelectorAll('tr[data-filter]');
+
+        rows.forEach(row => {
+            const data = JSON.parse(row.dataset.filter);
+
+            // Filtro de búsqueda
+            const searchData = row.getAttribute('data-search') || '';
+            const pasaBusqueda = searchData.includes(searchTerm);
+
+            // Filtros de columna
+            let pasaFiltros = true;
+            for (const [col, valores] of Object.entries(filtrosActivos)) {
+                if (valores.size === 0) continue;
+                const valorFila = (data[col] || '').toLowerCase();
+                if (!valores.has(valorFila)) {
+                    pasaFiltros = false;
+                    break;
+                }
             }
-        }
-    });
-    
-    // Agregar efecto hover personalizado para las filas
-    const tableRows = document.querySelectorAll('.table-row');
-    tableRows.forEach(row => {
-        row.addEventListener('mouseenter', function() {
-            this.style.borderLeftColor = 'var(--primary-color)';
+
+            row.style.display = pasaBusqueda && pasaFiltros ? '' : 'none';
         });
-        
-        row.addEventListener('mouseleave', function() {
-            this.style.borderLeftColor = 'transparent';
-        });
+    }
+
+    // ==========================================
+    // ELIMINAR CLIENTE
+    // ==========================================
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.delete-button');
+        if (!btn) return;
+        e.preventDefault();
+        const clienteName = btn.getAttribute('data-cliente');
+        const form = btn.closest('.delete-form');
+        if (confirm(`¿Eliminar al cliente ${clienteName}?`)) form.submit();
     });
+
+    // ==========================================
+    // HOVER EN FILAS
+    // ==========================================
+    document.querySelectorAll('.table-row').forEach(row => {
+        row.addEventListener('mouseenter', function () { this.style.borderLeftColor = 'var(--primary-color)'; });
+        row.addEventListener('mouseleave', function () { this.style.borderLeftColor = 'transparent'; });
+    });
+
 });
 </script>
 

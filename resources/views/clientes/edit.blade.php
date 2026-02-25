@@ -209,6 +209,19 @@
                     <div class="grid md:grid-cols-3 gap-4 mt-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
+                                <i class='bx bx-id-card mr-1'></i>
+                                Tipo de Documento
+                            </label>
+                            <select name="tipo_doc" class="input-field w-full px-4 py-3 border border-gray-300 rounded-lg transition-all">
+                                <option value="DNI" {{ old('tipo_doc', $cliente->tipo_doc) == 'DNI' ? 'selected' : '' }}>DNI</option>
+                                <option value="CE"  {{ old('tipo_doc', $cliente->tipo_doc) == 'CE'  ? 'selected' : '' }}>CE</option>
+                                <option value="RUC" {{ old('tipo_doc', $cliente->tipo_doc) == 'RUC' ? 'selected' : '' }}>RUC</option>
+                                <option value="PAS" {{ old('tipo_doc', $cliente->tipo_doc) == 'PAS' ? 'selected' : '' }}>PASAPORTE</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
                                 <i class='bx bx-heart mr-1'></i>
                                 Estado Civil
                             </label>

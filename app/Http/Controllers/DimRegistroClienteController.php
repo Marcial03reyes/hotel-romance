@@ -138,6 +138,7 @@ class DimRegistroClienteController extends Controller
 
         $request->validate([
             'nombre_apellido'   => 'required|string|max:100',
+            'tipo_doc'          => 'nullable|string|in:DNI,CE,RUC,PAS',
             'estado_civil'      => 'nullable|string|max:20',
             'fecha_nacimiento'  => 'nullable|date|before:today',
             'lugar_nacimiento'  => 'nullable|string|max:100',
@@ -147,6 +148,7 @@ class DimRegistroClienteController extends Controller
         ]);
 
         $cliente->nombre_apellido = $request->input('nombre_apellido');
+        $cliente->tipo_doc = $request->input('tipo_doc');
         $cliente->estado_civil = $request->input('estado_civil');
         $cliente->fecha_nacimiento = $request->input('fecha_nacimiento');
         $cliente->lugar_nacimiento = $request->input('lugar_nacimiento');
